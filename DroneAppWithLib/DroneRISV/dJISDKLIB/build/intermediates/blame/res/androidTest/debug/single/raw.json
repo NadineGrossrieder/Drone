@@ -28,12 +28,12 @@
         "source": "D:\\Renault-Drone\\Git\\DroneAppWithLib\\DroneRISV\\dJISDKLIB\\build\\intermediates\\bundles\\debug\\res\\raw\\gimbal_param_infos"
     },
     {
-        "merged": "D:\\Renault-Drone\\Git\\DroneAppWithLib\\DroneRISV\\dJISDKLIB\\build\\intermediates\\res\\merged\\androidTest\\debug\\raw\\iframe_p4p_720_3x2.h264",
-        "source": "D:\\Renault-Drone\\Git\\DroneAppWithLib\\DroneRISV\\dJISDKLIB\\build\\intermediates\\bundles\\debug\\res\\raw\\iframe_p4p_720_3x2.h264"
-    },
-    {
         "merged": "D:\\Renault-Drone\\Git\\DroneAppWithLib\\DroneRISV\\dJISDKLIB\\build\\intermediates\\res\\merged\\androidTest\\debug\\raw\\iframe_1632x1080_wm620.h264",
         "source": "D:\\Renault-Drone\\Git\\DroneAppWithLib\\DroneRISV\\dJISDKLIB\\build\\intermediates\\bundles\\debug\\res\\raw\\iframe_1632x1080_wm620.h264"
+    },
+    {
+        "merged": "D:\\Renault-Drone\\Git\\DroneAppWithLib\\DroneRISV\\dJISDKLIB\\build\\intermediates\\res\\merged\\androidTest\\debug\\raw\\iframe_p4p_720_3x2.h264",
+        "source": "D:\\Renault-Drone\\Git\\DroneAppWithLib\\DroneRISV\\dJISDKLIB\\build\\intermediates\\bundles\\debug\\res\\raw\\iframe_p4p_720_3x2.h264"
     },
     {
         "merged": "D:\\Renault-Drone\\Git\\DroneAppWithLib\\DroneRISV\\dJISDKLIB\\build\\intermediates\\res\\merged\\androidTest\\debug\\raw\\iframe_1760x720_wm620.h264",

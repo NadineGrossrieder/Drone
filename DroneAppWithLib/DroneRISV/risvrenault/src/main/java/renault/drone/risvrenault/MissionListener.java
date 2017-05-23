@@ -14,7 +14,7 @@ public interface MissionListener{
 
     void onResultCarCrash(Boolean isSuccess, Bitmap[] photos);
 
-    void onResultLand(Boolean isSuccess);
+    void onResultLand(Boolean isSuccess, String error);
 
-    void onResultLaunch(Boolean isSuccess);
+    void onResultLaunch(Boolean isSuccess, String error);
 }

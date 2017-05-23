@@ -1,22 +1,89 @@
 package renault.drone.risvrenault;
 
+import android.support.annotation.NonNull;
+
+import dji.common.battery.BatteryState;
+import dji.common.flightcontroller.FlightControllerState;
+import dji.common.flightcontroller.GPSSignalLevel;
 import dji.common.flightcontroller.LocationCoordinate3D;
+import dji.common.remotecontroller.GPSData;
+import dji.common.remotecontroller.HardwareState;
+import dji.sdk.products.Aircraft;
 
 /**
  * Created by Nadine Grossrieder on 10.05.2017.
- *
+ * <p>
  * Represents a drone's state.
  */
 
 public class DroneStates {
+
+
+    private Aircraft drone;
+    private int nbSatellite;
+    private GPSSignalLevel signalStrenght;
+    private Orientation orientation;
+    private float velocityX;
+    private float velocityY;
+    private float velocityZ;
+    private int totalFlightTime;
+    private boolean isFlying;
+    private boolean areMotorsOn;
+    private LocationCoordinate3D location;
+    private float sensorAltitude;
+    private float gpsAltitude;
+
+    private int batteryChargeRemaining;
+    private int remainingFlightTime;
+
+     DroneStates(Aircraft drone) {
+        this.drone = drone;
+
+        drone.getFlightController().setStateCallback(new FlightControllerState.Callback() {
+            @Override
+            public void onUpdate(@NonNull FlightControllerState flightControllerState) {
+                orientation = new Orientation(
+                        (float) flightControllerState.getAttitude().pitch,
+                        (float) flightControllerState.getAttitude().yaw,
+                        (float) flightControllerState.getAttitude().roll
+                );
+
+                nbSatellite = flightControllerState.getSatelliteCount();
+                signalStrenght = flightControllerState.getGPSSignalLevel();
+
+                velocityX = flightControllerState.getVelocityX();
+                velocityY = flightControllerState.getVelocityY();
+                velocityZ = -flightControllerState.getVelocityZ();
+
+                totalFlightTime = flightControllerState.getFlightTimeInSeconds()/10;
+
+                isFlying = flightControllerState.isFlying();
+                areMotorsOn = flightControllerState.areMotorsOn();
+
+                location = flightControllerState.getAircraftLocation();
+                sensorAltitude = flightControllerState.getUltrasonicHeightInMeters();
+                gpsAltitude = flightControllerState.getAircraftLocation().getAltitude();
+
+                remainingFlightTime = flightControllerState.getGoHomeAssessment().getRemainingFlightTime();
+            }
+        });
+
+        drone.getBattery().setStateCallback(new BatteryState.Callback() {
+            @Override
+            public void onUpdate(BatteryState batteryState) {
+                batteryChargeRemaining = batteryState.getChargeRemainingInPercent();
+            }
+        });
+    }
+
 
     /**
      * Retrieves altitude from the GPS location
      *
      * @return A float representing the altitude of the drone in meters
      */
-    public float getAltitudeFromGPS(){
-        return 0.0f;
+    public float getAltitudeFromGPS() {
+        return gpsAltitude;
     }
 
     /**
@@ -24,35 +91,8 @@ public class DroneStates {
      *
      * @return A float representing the altitude of the drone in meters
      */
-    public float getAltitudeFromSensor(){
-        return 0.0f;
-    }
-
-    /**
-     * Retrieves distance total in meter traveled since the takeoff
-     *
-     * @return A float representing the distance total
-     */
-    public float getDistanceTotal(){
-        return 0.0f;
-    }
-
-    /**
-     * Retrieves distance from the starting point
-     *
-     * @return A float reprenting the ditrance between the starting point and the drone
-     */
-    public float getDistance(){
-        return 0.0f;
-    }
-
-    /**
-     * Retrieves the current speed of the drone in the Y direction
-     *
-     * @return A float value of the current speed of the drone in the Y direction.
-     */
-    public float getVelocityY(){
-        return 0.0f;
+    public float getAltitudeFromSensor() {
+        return sensorAltitude;
     }
 
 
@@ -61,8 +101,8 @@ public class DroneStates {
      *
      * @return True, if motors are enabled. False, if motors are disabled
      */
-    public boolean isMotorEnabled(){
-        return true;
+    public boolean isMotorEnabled() {
+        return areMotorsOn;
     }
 
     /**
@@ -70,8 +110,8 @@ public class DroneStates {
      *
      * @return True, if the drone is currently flying. False, if the drone is not currently flying
      */
-    public boolean isFlying(){
-        return true;
+    public boolean isFlying() {
+        return isFlying;
     }
 
     /**
@@ -79,8 +119,8 @@ public class DroneStates {
      *
      * @return An instance of LocationCoordinate3D reprenting the current GPS position of the drone
      */
-    public LocationCoordinate3D getLocation(){
-        return new LocationCoordinate3D(0.0, 0.0, 0.0f);
+    public LocationCoordinate3D getLocation() {
+        return location;
     }
 
     /**
@@ -88,10 +128,18 @@ public class DroneStates {
      *
      * @return A float value of the current speed of the drone in the x direction.
      */
-    public float getVelocityX(){
-        return 0.0f;
+    public float getVelocityX() {
+        return velocityX;
     }
 
+    /**
+     * Retrieves the current speed of the drone in the Y direction
+     *
+     * @return A float value of the current speed of the drone in the Y direction.
+     */
+    public float getVelocityY() {
+        return velocityY;
+    }
 
 
     /**
@@ -99,8 +147,8 @@ public class DroneStates {
      *
      * @return A float value of the current speed of the drone in the Z direction.
      */
-    public float getVelocityZ(){
-        return 0.0f;
+    public float getVelocityZ() {
+        return velocityZ;
     }
 
     /**
@@ -108,8 +156,8 @@ public class DroneStates {
      *
      * @return An int representing the flight time in seconds
      */
-    public int getTotalFlightTime(){
-        return 0;
+    public int getTotalFlightTime() {
+        return totalFlightTime;
     }
 
     /**
@@ -117,8 +165,8 @@ public class DroneStates {
      *
      * @return An int representing the number of GPS satellite
      */
-    public int getNbSatellite(){
-        return 0;
+    public int getNbSatellite() {
+        return nbSatellite;
     }
 
     /**
@@ -126,11 +174,22 @@ public class DroneStates {
      *
      * @return An int representing the drone's current GPS signal quality
      */
-    public int getGPSSignal(){
-        return 0;
+    public int getGPSSignal() {
+        return signalStrenght.value();
     }
 
 
+    Orientation getOrientation() {
+        return orientation;
+    }
+
+    int getBatteryChargeRemaining() {
+        return batteryChargeRemaining;
+    }
+
+    int getRemainingFlightTime() {
+        return remainingFlightTime;
+    }
 
 
 }

@@ -9,13 +9,23 @@ package renault.drone.risvrenault;
 
 public class Orientation {
 
+    private final float pitch;
+    private final float roll;
+    private final float yaw;
+
+    Orientation(float pitch, float roll, float yaw){
+        this.pitch = pitch;
+        this.roll = roll;
+        this.yaw = yaw;
+    }
+
     /**
      * Retrieves pitch value in m/s (-15m/s to 15m/s)
      *
      * @return a float representing the pitch value in m/s
      */
     public float getPitch(){
-        return 0.0f;
+        return pitch;
     }
 
     /**
@@ -24,7 +34,7 @@ public class Orientation {
      * @return a float representing the roll value in m/s
      */
     public float getRoll(){
-        return 0.0f;
+        return roll;
     }
 
     /**
@@ -33,6 +43,6 @@ public class Orientation {
      * @return a float representing the yaw value in degrees
      */
     public float getYaw(){
-        return 0.0f;
+        return yaw;
     }
 }
