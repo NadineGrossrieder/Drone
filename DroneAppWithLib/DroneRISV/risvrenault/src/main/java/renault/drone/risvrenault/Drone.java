@@ -6,7 +6,6 @@ import android.graphics.SurfaceTexture;
 import android.location.Location;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.TextureView;
 import android.widget.Toast;
@@ -14,7 +13,6 @@ import android.widget.Toast;
 import dji.common.airlink.SignalQualityCallback;
 import dji.common.error.DJIError;
 import dji.common.error.DJISDKError;
-import dji.common.flightcontroller.FlightControllerState;
 import dji.common.flightcontroller.LocationCoordinate3D;
 import dji.common.product.Model;
 import dji.common.remotecontroller.GPSData;
@@ -74,10 +72,11 @@ public class Drone {
 
     private Context activity;
     private TextureView cameraView;
+    private FollowQRCode cameraZone;
     private BaseProduct baseProduct;
     private Aircraft drone;
-    private int cameraViewHeight;
-    private int cameraViewWidth;
+    private int cameraViewHeight = -1;
+    private int cameraViewWidth = -1;
 
     private Camera camera;
     private DroneStates droneStates;
@@ -200,24 +199,27 @@ public class Drone {
      *
      * @param activity
      * @param cameraView       : TextureView where the live camera is displayed
+     * @param cameraZone
      * @param baseProduct      : instance of the BaseProduct corresponding to the drone
      * @param cameraViewWidth  : width of the live camera
-     * @param cameraViewHeight : height of the live camera
-     * @return True, if success, false if not success
+     * @param cameraViewHeight : height of the live camera    @return True, if success, false if not success
      */
-    public Boolean init(final Context activity, TextureView cameraView, BaseProduct baseProduct, int cameraViewWidth, int cameraViewHeight) {
-        Toast.makeText(this.activity, "Init BaseProduct : " + baseProduct.getModel().getDisplayName(), Toast.LENGTH_SHORT).show();
+    public Boolean init(final Context activity, TextureView cameraView, FollowQRCode cameraZone, BaseProduct baseProduct, int cameraViewWidth, int cameraViewHeight) {
 
         if (DJISDKManager.getInstance().hasSDKRegistered() && activity != null && cameraView != null && baseProduct != null) {
 
+            Toast.makeText(this.activity, "Aircraft : " + baseProduct.getModel().getDisplayName(), Toast.LENGTH_SHORT).show();
 
 
 //            this.activity = activity;
             this.cameraView = cameraView;
+            this.cameraZone = cameraZone;
             this.drone = (Aircraft) baseProduct;
             this.baseProduct = baseProduct;
-            this.cameraViewWidth = cameraViewWidth;
-            this.cameraViewHeight = cameraViewHeight;
+//            if(cameraViewWidth > 0 && cameraViewHeight > 0) {
+//                this.cameraViewWidth = cameraViewWidth;
+//                this.cameraViewHeight = cameraViewHeight;
+//            }
 
             this.droneStates = new DroneStates(drone);
             this.camera = new Camera(drone);
@@ -252,7 +254,7 @@ public class Drone {
                 }
             });
 
-            Toast.makeText(activity, "Init camera", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(activity, "Init camera", Toast.LENGTH_SHORT).show();
 
 
             // The callback for receiving the raw H264 video data for camera live view
@@ -385,6 +387,7 @@ public class Drone {
                 break;
             case LAUNCH:
                 if (currentMission == Mission.NO_MISSION && !droneStates.isFlying()) {
+                    Toast.makeText(activity, "Launch", Toast.LENGTH_SHORT).show();
                     currentMission = mission;
                     isAuthorized = true;
                     takeoff();
@@ -392,6 +395,7 @@ public class Drone {
                 break;
             case LAND:
                 if (currentMission != Mission.LAUNCH && droneStates.isFlying()) {
+                    Toast.makeText(activity, "Land", Toast.LENGTH_SHORT).show();
                     currentMission = mission;
                     isAuthorized = true;
                     land();
@@ -400,6 +404,7 @@ public class Drone {
             case CAR_CRASH:
                 if (currentMission != Mission.LAND) {
                     currentMission = mission;
+                    Toast.makeText(activity, "Car Crash", Toast.LENGTH_SHORT).show();
                     isAuthorized = true;
                     carCrash();
                 }
@@ -407,8 +412,12 @@ public class Drone {
             case FOLLOW:
                 if (currentMission != Mission.LAND) {
                     currentMission = mission;
+                    Toast.makeText(activity, "Follow :" + cameraViewWidth + " Height :" + cameraViewHeight, Toast.LENGTH_SHORT).show();
+
+//                    Toast.makeText(activity, "Follow", Toast.LENGTH_SHORT).show();
+                    cameraZone.resume(activity, drone, cameraView, cameraViewWidth, cameraViewHeight, droneStates);
                     isAuthorized = true;
-                    follow();
+//                    follow();
                 }
                 break;
         }
@@ -577,17 +586,21 @@ public class Drone {
         {
             activity.stopService(intent);
         }
+        if(cameraZone != null && cameraZone.readThread != null){
+            cameraZone.readThread.kill();
+        }
 
     }
 
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-        Toast.makeText(activity, "Surface available", Toast.LENGTH_SHORT).show();
-
-
         if (mCodecManager == null) {
+            Toast.makeText(activity, "Surface available width :" + width + " Height :" + height, Toast.LENGTH_SHORT).show();
+
             mCodecManager = new DJICodecManager(activity, surface, width, height);
             cameraViewHeight = height;
             cameraViewWidth = width;
+            Toast.makeText(activity, "Surface available2 width :" + cameraViewHeight + " Height :" + cameraViewWidth, Toast.LENGTH_SHORT).show();
+
         }
     }
 

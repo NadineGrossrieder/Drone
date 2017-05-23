@@ -14,12 +14,12 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import renault.drone.risvrenault.Drone;
+import renault.drone.risvrenault.FollowQRCode;
 
 public class MainActivity extends Activity implements View.OnClickListener, TextureView.SurfaceTextureListener {
 
@@ -28,21 +28,16 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
 
     private long speedRefresh = 5000;
 
-//    protected VideoFeeder.VideoDataCallback mReceivedVideoDataCallBack = null;
-    // Codec for video live view
-//    protected DJICodecManager mCodecManager = null;
 
     protected TextureView mVideoSurface = null;
-    //    private Button mStopBtn;
-    private ToggleButton mStopBtn;
-    private Button mMapBtn;
+    private FollowQRCode cameraZone;
+
+    private Button mStopBtn;
     private ToggleButton mModeBtn;
     private TextView altitudeTxt;
     private TextView gpsTxt;
     private TextView phoneGPSText;
     private TextView isFlyingTxt;
-    private TextView ScanningStateTxt;
-    private ScrollView scrollLog;
 
     private int sWidth = -1;
     private int sHeight = -1;
@@ -56,14 +51,13 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
 
     private Drone drone;
     private boolean isFirst = true;
-    //    private TextureView cameraView;
 
 
     private TextView velocityX;
     private TextView velocityY;
     private TextView velocityZ;
 
-    private TextView flighTime;
+    private TextView flightTime;
 
 
     @Override
@@ -86,9 +80,10 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                     , 1);
         }
 
+
+        drone = new Drone(this);
+
         initUI();
-
-
     }
 
     //    protected void onProductChange() {
@@ -107,7 +102,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
         }
         interrupted = false;
 
-        drone = new Drone(this);
         isFirst = true;
         startDisplayThread();
     }
@@ -142,26 +136,24 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
     private void initUI() {
         // init mVideoSurface
         mVideoSurface = (TextureView) findViewById(R.id.video_previewer_surface);
+        cameraZone = (FollowQRCode) findViewById(R.id.cameraZone);
 
         if (null != mVideoSurface) {
             mVideoSurface.setSurfaceTextureListener(this);
         }
 
-//        cameraView = (TextureView)findViewById(R.id.bcView);
 
         altitudeTxt = (TextView) findViewById(R.id.altitude);
         gpsTxt = (TextView) findViewById(R.id.positionGPS);
         phoneGPSText = (TextView) findViewById(R.id.phonePositionGPS);
 
         isFlyingTxt = (TextView) findViewById(R.id.isFlyingBool);
-        ScanningStateTxt = (TextView) findViewById(R.id.ScanningState);
-        scrollLog = (ScrollView) findViewById(R.id.scrollLog);
 
         velocityX = (TextView) findViewById(R.id.velocityX);
         velocityY = (TextView) findViewById(R.id.velocityY);
         velocityZ = (TextView) findViewById(R.id.velocityZ);
 
-        flighTime = (TextView) findViewById(R.id.flightTime);
+        flightTime = (TextView) findViewById(R.id.flightTime);
 
         btnTakeoff = (Button) findViewById(R.id.btn_takeoff);
         btnLand = (Button) findViewById(R.id.btn_land);
@@ -170,19 +162,20 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
         signalGPS = (TextView) findViewById(R.id.signalGPS);
 //        currentAltitudeSinceStart = (TextView) findViewById(R.id.currentAltitudeSinceStart);
 
-        mStopBtn = (ToggleButton) findViewById(R.id.btn_stop);
+        mStopBtn = (Button) findViewById(R.id.btn_stop);
         mModeBtn = (ToggleButton) findViewById(R.id.btn_mode);
-        mMapBtn = (Button) findViewById(R.id.btn_map);
 
-
-        mStopBtn.setOnClickListener(this);
         mStopBtn.setOnClickListener(this);
         btnTakeoff.setOnClickListener(this);
         btnLand.setOnClickListener(this);
 
+
         mModeBtn.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    drone.setMission(Drone.Mission.FOLLOW);
+                }
             }
         });
     }
@@ -221,12 +214,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_stop: {
-
-                break;
-            }
-            case R.id.btn_map: {
-//                Intent intent = new Intent(this, MapActivity.class);
-//                startActivity(intent);
+                drone.setMission(Drone.Mission.NO_MISSION);
                 break;
             }
             case R.id.btn_takeoff: {
@@ -256,7 +244,12 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                                     if (isFirst) {
                                         try {
 //                                            isFirst = false;
-                                            isFirst = !(drone.init(getApplicationContext(), mVideoSurface, drone.getDrone(), sWidth, sHeight));
+                                            runOnUiThread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    isFirst = !(drone.init(getApplicationContext(), mVideoSurface, cameraZone, drone.getDrone(), sWidth, sHeight));
+                                                }
+                                            });
                                             speedRefresh = SPEED_REFRESH;
                                         } catch (Exception e) {
                                             Log.e(TAG, e.getMessage());
@@ -277,14 +270,14 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                                         int m = 0;
                                         int s = drone.getDroneStates().getTotalFlightTime();
 
-                                        while(s >= 60){
-                                            if(s >= 60){
+                                        while (s >= 60) {
+                                            if (s >= 60) {
                                                 m += 1;
-                                                s = s-60;
+                                                s = s - 60;
                                             }
                                         }
-//                                        flighTime.setText(String.valueOf(drone.getDroneStates().getTotalFlightTime()));
-                                        flighTime.setText(m + ":" + s);
+//                                        flightTime.setText(String.valueOf(drone.getDroneStates().getTotalFlightTime()));
+                                        flightTime.setText(m + ":" + s);
 
                                         signalGPS.setText("Signal GPS : " + String.valueOf(drone.getDroneStates().getGPSSignal()));
                                         satellite.setText("Satellite : " + (drone.getDroneStates().getNbSatellite()));
@@ -332,7 +325,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
 
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-//        drone.onSurfaceTextureAvailable(surface, width, height);
+        drone.onSurfaceTextureAvailable(surface, width, height);
 
     }
 

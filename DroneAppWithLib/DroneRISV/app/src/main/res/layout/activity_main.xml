@@ -13,12 +13,12 @@
         android:layout_centerHorizontal="true"
         android:layout_gravity="center" />
 
-    <!--<ch.heia.ps6_dronedynamiclanding.BarcodeView-->
-        <!--android:id="@+id/bcView"-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="match_parent"-->
-        <!--android:layout_centerHorizontal="true"-->
-        <!--android:layout_gravity="center" />-->
+    <renault.drone.risvrenault.FollowQRCode
+        android:id="@+id/cameraZone"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerHorizontal="true"
+        android:layout_gravity="center" />
 
     <!--<Button-->
     <!--android:id="@+id/btn_stop"-->
@@ -31,7 +31,7 @@
     <!--android:textColor="@color/colorRed"-->
     <!--android:textSize="12sp" />-->
 
-    <ToggleButton
+    <Button
         android:id="@+id/btn_stop"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -39,41 +39,42 @@
         android:layout_alignParentTop="true"
         android:layout_margin="10dp"
         android:checked="false"
-        android:textColor="@color/colorGreen"
-        android:textOff="@string/start"
-        android:textOn="@string/stop"
+        android:textColor="@color/colorRed"
+        android:text="@string/stop"
         android:textSize="12sp" />
 
     <Button
         android:id="@+id/btn_car_crash"
         android:layout_width="wrap_content"
-        android:layout_height="@dimen/btn_height"
+        android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_margin="@dimen/btn_margin"
-        android:layout_toEndOf="@+id/btn_stop"
+        android:layout_toStartOf="@+id/btn_mode"
         android:text="@string/car_crash"
         android:textColor="@color/colorWhite"
         android:textSize="12sp" />
 
-    <Button
-        android:id="@+id/btn_map"
-        android:layout_width="@dimen/btn_width"
-        android:layout_height="@dimen/btn_height"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentTop="true"
-        android:layout_margin="@dimen/btn_margin"
-        android:text="@string/map"
-        android:textSize="12sp" />
+    <!--<Button-->
+        <!--android:id="@+id/btn_map"-->
+        <!--android:layout_width="@dimen/btn_width"-->
+        <!--android:layout_height="@dimen/btn_height"-->
+        <!--android:layout_alignParentEnd="true"-->
+        <!--android:layout_alignParentTop="true"-->
+        <!--android:layout_margin="@dimen/btn_margin"-->
+        <!--android:text="@string/map"-->
+        <!--android:textSize="12sp" />-->
 
     <ToggleButton
         android:id="@+id/btn_mode"
-        android:layout_width="@dimen/tgglbtn_width"
-        android:layout_height="@dimen/btn_height"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/btn_margin"
-        android:layout_toStartOf="@+id/btn_map"
+        android:layout_alignParentEnd="true"
         android:text="@string/change_mode"
         android:textOff="@string/follow_mode"
+        android:textColor="@color/colorWhite"
         android:textOn="@string/land_mode"
+        android:layout_marginEnd="11dp"
         android:textSize="12sp" />
 
 
@@ -191,8 +192,8 @@
         android:id="@+id/velocityXTxt"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_map"
-        android:layout_below="@+id/btn_map"
+        android:layout_alignStart="@+id/btn_mode"
+        android:layout_below="@+id/btn_mode"
         android:text="@string/pitch"
         android:textColor="#ffffff" />
 
@@ -200,7 +201,7 @@
         android:id="@+id/velocityX"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_map"
+        android:layout_alignStart="@+id/btn_mode"
         android:layout_below="@+id/velocityXTxt"
         android:layout_marginBottom="10dp"
         android:text=""
@@ -210,7 +211,7 @@
         android:id="@+id/velocityYTxt"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_map"
+        android:layout_alignStart="@+id/btn_mode"
         android:layout_below="@+id/velocityX"
         android:text="@string/roll"
         android:textColor="#ffffff" />
@@ -219,7 +220,7 @@
         android:id="@+id/velocityY"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_map"
+        android:layout_alignStart="@+id/btn_mode"
         android:layout_below="@+id/velocityYTxt"
         android:layout_marginBottom="10dp"
         android:text=""
@@ -229,7 +230,7 @@
         android:id="@+id/velocityZTxt"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_map"
+        android:layout_alignStart="@+id/btn_mode"
         android:layout_below="@+id/velocityY"
         android:text="@string/yaw"
         android:textColor="#ffffff" />
@@ -238,7 +239,7 @@
         android:id="@+id/velocityZ"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_map"
+        android:layout_alignStart="@+id/btn_mode"
         android:layout_below="@+id/velocityZTxt"
         android:layout_marginBottom="10dp"
         android:text=""
@@ -248,7 +249,7 @@
         android:id="@+id/FlightTimeTxt"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_map"
+        android:layout_alignStart="@+id/btn_mode"
         android:layout_below="@+id/velocityZ"
         android:text="@string/flightTime"
         android:textColor="#ffffff" />
@@ -257,41 +258,41 @@
         android:id="@+id/flightTime"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_map"
+        android:layout_alignStart="@+id/btn_mode"
         android:layout_below="@+id/FlightTimeTxt"
         android:layout_marginBottom="10dp"
         android:text=""
         android:textColor="#ffffff" />
 
-    <ToggleButton
-        android:id="@+id/btn_rec"
-        android:layout_width="wrap_content"
-        android:layout_height="@dimen/btn_height"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginBottom="10dp"
-        android:layout_marginEnd="11dp"
-        android:checked="false"
-        android:textColor="@color/colorRed"
-        android:textOff="@string/rec"
-        android:textOn="@string/stop"
-        android:textSize="12sp" />
+    <!--<ToggleButton-->
+        <!--android:id="@+id/btn_rec"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="@dimen/btn_height"-->
+        <!--android:layout_alignParentBottom="true"-->
+        <!--android:layout_alignParentEnd="true"-->
+        <!--android:layout_marginBottom="10dp"-->
+        <!--android:layout_marginEnd="11dp"-->
+        <!--android:checked="false"-->
+        <!--android:textColor="@color/colorRed"-->
+        <!--android:textOff="@string/rec"-->
+        <!--android:textOn="@string/stop"-->
+        <!--android:textSize="12sp" />-->
 
-    <Button
-        android:id="@+id/btn_photo"
-        android:layout_width="wrap_content"
-        android:layout_height="@dimen/btn_height"
-        android:layout_marginRight="10dp"
-        android:textSize="12sp"
-        android:text="@string/take_photo"
-        android:layout_alignBottom="@+id/btn_rec"
-        android:layout_toStartOf="@+id/btn_rec" />
+    <!--<Button-->
+        <!--android:id="@+id/btn_photo"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="@dimen/btn_height"-->
+        <!--android:layout_marginRight="10dp"-->
+        <!--android:textSize="12sp"-->
+        <!--android:text="@string/take_photo"-->
+        <!--android:layout_alignBottom="@+id/btn_rec"-->
+        <!--android:layout_toStartOf="@+id/btn_rec" />-->
 
     <Button
         android:id="@+id/btn_takeoff"
         android:layout_width="wrap_content"
-        android:layout_height="@dimen/btn_height"
-        android:layout_above="@+id/btn_rec"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
         android:layout_marginEnd="11dp"
         android:text="@string/takeoff"
@@ -302,7 +303,7 @@
         android:id="@+id/btn_land"
         android:layout_width="wrap_content"
         android:layout_height="@dimen/btn_height"
-        android:layout_above="@+id/btn_rec"
+        android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
         android:layout_marginEnd="11dp"
         android:text="@string/land"
@@ -310,19 +311,6 @@
         android:visibility="gone"
         android:textSize="12sp" />
 
-    <ScrollView
-        android:id="@+id/scrollLog"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_stop"
-        android:layout_below="@+id/isFlyingBool">
 
-        <TextView
-            android:id="@+id/ScanningState"
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
 
-            android:text=""
-            android:textColor="#ffffff" />
-    </ScrollView>
 </RelativeLayout>

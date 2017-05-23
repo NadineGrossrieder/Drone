@@ -6,8 +6,6 @@ import dji.common.battery.BatteryState;
 import dji.common.flightcontroller.FlightControllerState;
 import dji.common.flightcontroller.GPSSignalLevel;
 import dji.common.flightcontroller.LocationCoordinate3D;
-import dji.common.remotecontroller.GPSData;
-import dji.common.remotecontroller.HardwareState;
 import dji.sdk.products.Aircraft;
 
 /**

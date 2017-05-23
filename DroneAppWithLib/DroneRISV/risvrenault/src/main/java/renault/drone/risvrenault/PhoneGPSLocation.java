@@ -22,7 +22,7 @@ import static com.google.android.gms.location.LocationServices.FusedLocationApi;
  * Created by Nadine Grossrieder on 23.05.2017.
  */
 
-public class PhoneGPSLocation extends Service
+class PhoneGPSLocation extends Service
 {
     private static final String TAG = PhoneGPSLocation.class.getName();
     private static final int UPDATE_FREQUENCY = 5000;
