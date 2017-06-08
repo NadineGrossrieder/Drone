@@ -1,10 +1,14 @@
 package renault.drone.risvrenault;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
+import android.os.Environment;
 import android.support.annotation.NonNull;
+import android.widget.Toast;
 
+import java.io.File;
 import java.util.List;
 
 import dji.common.camera.SDCardState;
@@ -17,6 +21,7 @@ import dji.common.util.CommonCallbacks;
 import dji.sdk.camera.MediaFile;
 import dji.sdk.camera.MediaManager;
 import dji.sdk.products.Aircraft;
+import dji.sdk.sdkmanager.DJISDKManager;
 
 /**
  * Created by Nadine Grossrieder on 10.05.2017.
@@ -118,91 +123,199 @@ public class Camera {
      *
      * @return A Bitmap representing the last picture taken
      */
-    public Bitmap takePicture() {
+    public Bitmap takePicture(final Context activity) {
         //TODO handle state
         drone.getCamera().setMode(SettingsDefinitions.CameraMode.SHOOT_PHOTO, new CommonCallbacks.CompletionCallback() {
             @Override
             public void onResult(DJIError djiError) {
                 if (djiError != null) {
-//                    scanningQRCodeState += djiError.getDescription() + "\n\r";
+                    Toast.makeText(activity, djiError.getDescription(), Toast.LENGTH_SHORT).show();
+
                 } else {
-//                    scanningQRCodeState += "Mode photo changed with success \n\r";
                     drone.getCamera().startShootPhoto(new CommonCallbacks.CompletionCallback() {
                         @Override
                         public void onResult(DJIError djiError) {
                             if (djiError != null) {
-//                                scanningQRCodeState += djiError.getDescription() + "\n\r";
+                                Toast.makeText(activity, djiError.getDescription(), Toast.LENGTH_SHORT).show();
+
                             } else {
-//                                scanningQRCodeState += "Photo taken \n\r";
+
+                                Toast.makeText(activity, "Picture taken", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });
-
                 }
             }
         });
 
-
-        drone.getCamera()
-                .setMode(SettingsDefinitions.CameraMode.MEDIA_DOWNLOAD,
-                        new CommonCallbacks.CompletionCallback() {
-                            @Override
-                            public void onResult(DJIError djiError) {
-                                if (null == djiError){
-                                    drone.getCamera().getMediaManager().fetchMediaList(new MediaManager.DownloadListener<List<MediaFile>>() {
-                                        String str;
-
-                                        @Override
-                                        public void onStart() {
-                                        }
-
-                                        @Override
-                                        public void onRateUpdate(long total, long current, long persize) {
-                                        }
-
-                                        @Override
-                                        public void onProgress(long l, long l1) {
-
-                                        }
-
-                                        @Override
-                                        public void onSuccess(List<MediaFile> djiMedias) {
-                                            if (djiMedias != null) {
-                                                if (!djiMedias.isEmpty()) {
-                                                    media = djiMedias.get(0);
-                                                    str = "Total Media files:"
-                                                            + djiMedias.size()
-                                                            + "\n"
-                                                            + "Media 1: "
-                                                            + djiMedias.get(0).getFileName();
-                                                } else {
-                                                    str = "No Media in SD Card";
-                                                }
-                                            }
-                                        }
-
-                                        @Override
-                                        public void onFailure(DJIError djiError) {
-                                        }
-                                    });                                }
-                            }
-                        });
-        if (mediaManager == null) {
-            mediaManager = drone.getCamera().getMediaManager();
-        }
+//        if (mediaManager == null) {
+//            mediaManager = drone.getCamera().getMediaManager();
+//        }
 
 
         // TODO handle error
 
 
-        return Bitmap.createBitmap(0, 0, Bitmap.Config.RGB_565);
+        return null;
     }
+
+    public Bitmap getTwoLastPictures(final Context activity) {
+        try {
+            Thread th = new Thread(new Runnable() {
+                public void run() {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.getMessage();
+                    }
+
+                    if (!drone.getCamera().isMediaDownloadModeSupported()) {
+                        Toast.makeText(activity, "Not supported", Toast.LENGTH_SHORT).show();
+                    } else {
+                        drone.getCamera().setMode(SettingsDefinitions.CameraMode.MEDIA_DOWNLOAD, new CommonCallbacks.CompletionCallback() {
+                            @Override
+                            public void onResult(DJIError djiError) {
+                                if (null == djiError) {
+                                    try {
+                                        if (drone != null && drone.getCamera() != null && drone.getCamera().getMediaManager() != null) {
+                                            drone.getCamera().getMediaManager().fetchMediaList(new MediaManager.DownloadListener<List<MediaFile>>() {
+                                                String str;
+
+                                                @Override
+                                                public void onStart() {
+                                                    Toast.makeText(activity, "start", Toast.LENGTH_SHORT).show();
+                                                }
+
+                                                @Override
+                                                public void onRateUpdate(long total, long current, long persize) {
+
+                                                }
+
+                                                @Override
+                                                public void onProgress(long l, long l1) {
+
+                                                }
+
+                                                @Override
+                                                public void onSuccess(List<MediaFile> djiMedias) {
+                                                    Toast.makeText(activity, "Success", Toast.LENGTH_SHORT).show();
+
+                                                    try {
+                                                        if (djiMedias != null && !djiMedias.isEmpty()) {
+                                                            Toast.makeText(activity, "not empty", Toast.LENGTH_SHORT).show();
+
+                                                            media = djiMedias.get(0);
+
+                                                            Toast.makeText(activity, media.getFileName(), Toast.LENGTH_SHORT).show();
+
+                                                            File file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+//                                              File file = new File("/download");
+
+
+                                                            MediaManager.DownloadListener<String> completion = new MediaManager.DownloadListener<String>() {
+                                                                @Override
+                                                                public void onStart() {
+                                                                    Toast.makeText(activity, "start fetch media data", Toast.LENGTH_SHORT).show();
+
+                                                                }
+
+                                                                @Override
+                                                                public void onRateUpdate(long l, long l1, long l2) {
+
+                                                                }
+
+                                                                @Override
+                                                                public void onProgress(long l, long l1) {
+
+                                                                }
+
+                                                                @Override
+                                                                public void onSuccess(String s) {
+                                                                    Toast.makeText(activity, "fetch media data success : " + s, Toast.LENGTH_SHORT).show();
+
+                                                                }
+
+                                                                @Override
+                                                                public void onFailure(DJIError djiError) {
+                                                                    if (djiError != null) {
+                                                                        Toast.makeText(activity, "fetch media data fail" + djiError, Toast.LENGTH_LONG).show();
+                                                                    }
+
+                                                                }
+                                                            };
+
+                                                            if (media == null) {
+                                                                Toast.makeText(activity, "media is null", Toast.LENGTH_SHORT).show();
+                                                            }
+                                                            if (file == null) {
+                                                                Toast.makeText(activity, "file is null " + file.toString(), Toast.LENGTH_SHORT).show();
+                                                            }
+
+
+                                                            if (completion == null) {
+                                                                Toast.makeText(activity, "completion is null", Toast.LENGTH_SHORT).show();
+                                                            }
+
+                                                            if(mediaManager == null){
+                                                                Toast.makeText(activity, "media manager is null", Toast.LENGTH_SHORT).show();
+                                                                mediaManager = drone.getCamera().getMediaManager();
+                                                            }
+
+                                                            mediaManager.fetchMediaData(media, file, "carcrash1", completion);
+
+
+                                                            str = "Total Media files:"
+                                                                    + djiMedias.size()
+                                                                    + "\n"
+                                                                    + "Media 1: "
+                                                                    + djiMedias.get(0).getFileName();
+                                                        } else {
+                                                            str = "No Media in SD Card";
+                                                        }
+                                                    } catch (Exception e) {
+                                                        Toast.makeText(activity, "fetch media " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                                    }
+                                                }
+
+                                                @Override
+                                                public void onFailure(DJIError djiError) {
+                                                    if (djiError != null) {
+                                                        Toast.makeText(activity, "fetch media fail : " + djiError.getDescription(), Toast.LENGTH_SHORT).show();
+                                                    }
+                                                }
+                                            });
+                                        } else {
+                                            Toast.makeText(activity, "Something is null", Toast.LENGTH_SHORT).show();
+                                        }
+                                    } catch (Exception e) {
+                                        Toast.makeText(activity, "Set mode catch " + e.getMessage(), Toast.LENGTH_SHORT).show();
+
+                                    }
+                                } else {
+                                    Toast.makeText(activity, "set mode error : " + djiError.getDescription(), Toast.LENGTH_SHORT).show();
+
+                                }
+
+                            }
+                        });
+                    }
+                }
+            });
+            th.start();
+        } catch (Exception e) {
+            Toast.makeText(activity, "retrieve picture : " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+
+        return null;
+    }
+
 
     /**
      * Retrieves information about the orientation (pitch, roll, yaw) of the gimbal (camera)
      *
      * @return An instance of Orientation representting the pitch, roll and yaw of the gimbal
      */
+
     public Orientation getGimbalOrientation() {
         return orientation;
     }

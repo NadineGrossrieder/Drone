@@ -33,7 +33,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
     private FollowQRCode cameraZone;
 
     private Button mStopBtn;
-    private ToggleButton mModeBtn;
     private TextView altitudeTxt;
     private TextView gpsTxt;
     private TextView phoneGPSText;
@@ -45,9 +44,14 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
 
     private Button btnTakeoff;
     private Button btnLand;
+    private Button btnCarCrash;
+    private Button btnFollowMode;
+//    private Button btnLandMode;
+
 
     private TextView satellite;
     private TextView signalGPS;
+    private TextView battery;
 
     private Drone drone;
     private boolean isFirst = true;
@@ -75,31 +79,31 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                             Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.ACCESS_FINE_LOCATION,
                             Manifest.permission.CHANGE_WIFI_STATE, Manifest.permission.MOUNT_UNMOUNT_FILESYSTEMS,
                             Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.SYSTEM_ALERT_WINDOW,
-                            Manifest.permission.READ_PHONE_STATE,
+                            Manifest.permission.READ_PHONE_STATE
                     }
                     , 1);
         }
 
-
-        drone = new Drone(this);
-
-        initUI();
     }
 
-    //    protected void onProductChange() {
-//        initPreviewer();
-//    }
     @Override
     public void onResume() {
         Log.e(TAG, "onResume");
         super.onResume();
-//        initPreviewer();
-//        onProductChange();
+
+        initUI();
 
 
-        if (mVideoSurface == null) {
-            Log.e(TAG, "mVideoSurface is null");
-        }
+        drone = new Drone(this);
+
+
+//        if (mVideoSurface == null) {
+//            Log.e(TAG, "mVideoSurface is null");
+//        }
+        mVideoSurface.setSurfaceTextureListener(this);
+
+        drone.initLiveView();
+
         interrupted = false;
 
         isFirst = true;
@@ -109,21 +113,15 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
     @Override
     public void onPause() {
         Log.e(TAG, "onPause");
-        drone.unInitLiveView();
         interrupted = true;
+        drone.unInitLiveView();
         super.onPause();
     }
 
     @Override
     public void onStop() {
         Log.e(TAG, "onStop");
-//        this.stopService(intent);
         super.onStop();
-    }
-
-    public void onReturn(View view) {
-        Log.e(TAG, "onReturn");
-        this.finish();
     }
 
     @Override
@@ -157,50 +155,26 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
 
         btnTakeoff = (Button) findViewById(R.id.btn_takeoff);
         btnLand = (Button) findViewById(R.id.btn_land);
+        btnCarCrash = (Button) findViewById(R.id.btn_car_crash);
+        mStopBtn = (Button) findViewById(R.id.btn_stop);
+        btnFollowMode = (Button) findViewById(R.id.btn_follow_mode);
+//        btnLandMode = (Button) findViewById(R.id.btn_land_mode);
 
         satellite = (TextView) findViewById(R.id.satellite);
         signalGPS = (TextView) findViewById(R.id.signalGPS);
+        battery = (TextView) findViewById(R.id.batteryLvl);
 //        currentAltitudeSinceStart = (TextView) findViewById(R.id.currentAltitudeSinceStart);
 
-        mStopBtn = (Button) findViewById(R.id.btn_stop);
-        mModeBtn = (ToggleButton) findViewById(R.id.btn_mode);
 
         mStopBtn.setOnClickListener(this);
         btnTakeoff.setOnClickListener(this);
         btnLand.setOnClickListener(this);
+        btnCarCrash.setOnClickListener(this);
+        btnFollowMode.setOnClickListener(this);
+//        btnLandMode.setOnClickListener(this);
 
 
-        mModeBtn.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    drone.setMission(Drone.Mission.FOLLOW);
-                }
-            }
-        });
     }
-
-    /*
-    Check the product connection status, then invoke the SurfaceTextureListerner method.
-    If VideoFeeder has video feeds, and the size of it is larger than 0, set the mReceivedVideoDataCallBack as its "callback"
-     */
-//    private void initPreviewer() {
-//        BaseProduct product = drone.getDrone();
-//        if (product == null || !product.isConnected()) {
-//            showToast("Disconnected");
-//        } else {
-//            if (null != mVideoSurface) {
-//                mVideoSurface.setSurfaceTextureListener(this);
-//            }
-//            if (!product.getModel().equals(Model.UNKNOWN_AIRCRAFT)) {
-//                if (VideoFeeder.getInstance().getVideoFeeds() != null
-//                        && VideoFeeder.getInstance().getVideoFeeds().size() > 0) {
-//                    VideoFeeder.getInstance().getVideoFeeds().get(0).setCallback(mReceivedVideoDataCallBack);
-//                }
-//            }
-//        }
-//    }
-
 
     public void showToast(final String msg) {
         runOnUiThread(new Runnable() {
@@ -225,6 +199,18 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                 drone.setMission(Drone.Mission.LAND);
                 break;
             }
+            case R.id.btn_car_crash: {
+                drone.setMission(Drone.Mission.CAR_CRASH);
+                break;
+            }
+            case R.id.btn_follow_mode: {
+                drone.setMission(Drone.Mission.FOLLOW);
+                break;
+            }
+//            case R.id.btn_land_mode: {
+//                drone.setMission(Drone.Mission.LAND);
+//                break;
+//            }
             default:
                 break;
         }
@@ -248,6 +234,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                                                 @Override
                                                 public void run() {
                                                     isFirst = !(drone.init(getApplicationContext(), mVideoSurface, cameraZone, drone.getDrone(), sWidth, sHeight));
+                                                    drone.initLiveView();
                                                 }
                                             });
                                             speedRefresh = SPEED_REFRESH;
@@ -281,6 +268,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
 
                                         signalGPS.setText("Signal GPS : " + String.valueOf(drone.getDroneStates().getGPSSignal()));
                                         satellite.setText("Satellite : " + (drone.getDroneStates().getNbSatellite()));
+                                        battery.setText(drone.getBatteryLevel() + "%");
 
                                         if (drone.getDroneStates().isFlying()) {
                                             btnTakeoff.setVisibility(View.GONE);
@@ -296,7 +284,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                                             mStopBtn.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.colorRed));
                                         }
                                     } else {
-                                        phoneGPSText.setText("drone state is null");
+                                        phoneGPSText.setText("Drone state is null");
                                     }
                                 }
                             } catch (Exception e) {

@@ -79,7 +79,6 @@ public class FollowQRCode extends View {
 //        init(context);
     }
 
-    //TODO regarder si c'est bien ce consctructeur qui est appelé et non un des deux en dessus.
     public FollowQRCode(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         Log.d(TAG, "constructor 3");

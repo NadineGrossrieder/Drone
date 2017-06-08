@@ -43,13 +43,38 @@
         android:text="@string/stop"
         android:textSize="12sp" />
 
+
+    <Button
+        android:id="@+id/btn_takeoff"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_toEndOf="@id/btn_stop"
+        android:layout_margin="10dp"
+        android:text="@string/takeoff"
+        android:layout_marginBottom="15dp"
+        android:textSize="12sp" />
+
+    <Button
+        android:id="@+id/btn_land"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_toEndOf="@id/btn_stop"
+        android:layout_margin="10dp"
+        android:text="@string/land"
+        android:layout_marginBottom="15dp"
+        android:visibility="gone"
+        android:textSize="12sp" />
+
+
     <Button
         android:id="@+id/btn_car_crash"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_margin="@dimen/btn_margin"
-        android:layout_toStartOf="@+id/btn_mode"
+        android:layout_toStartOf="@+id/btn_follow_mode"
         android:text="@string/car_crash"
         android:textColor="@color/colorWhite"
         android:textSize="12sp" />
@@ -64,18 +89,29 @@
         <!--android:text="@string/map"-->
         <!--android:textSize="12sp" />-->
 
-    <ToggleButton
-        android:id="@+id/btn_mode"
+    <Button
+        android:id="@+id/btn_follow_mode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/btn_margin"
         android:layout_alignParentEnd="true"
-        android:text="@string/change_mode"
-        android:textOff="@string/follow_mode"
+        android:text="@string/follow_mode"
         android:textColor="@color/colorWhite"
-        android:textOn="@string/land_mode"
         android:layout_marginEnd="11dp"
         android:textSize="12sp" />
+
+    <!--<Button-->
+        <!--android:id="@+id/btn_land_mode"-->
+        <!--android:layout_width="100dp"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_marginTop="@dimen/btn_margin"-->
+        <!--android:layout_alignParentEnd="true"-->
+        <!--android:layout_below="@id/btn_follow_mode"-->
+        <!--android:text="@string/land_mode"-->
+        <!--android:textColor="@color/colorWhite"-->
+        <!--android:layout_marginEnd="11dp"-->
+        <!--android:textSize="12sp"-->
+        <!--android:layout_toEndOf="@+id/btn_car_crash" />-->
 
 
     <LinearLayout
@@ -95,7 +131,7 @@
             android:gravity="center"
             android:text="@string/satellite"
             android:textColor="#ffffff"
-            android:layout_marginRight="10dp"
+            android:layout_marginEnd="10dp"
             />
 
         <TextView
@@ -110,10 +146,34 @@
     </LinearLayout>
 
     <TextView
+        android:id="@+id/battery"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_below="@id/signalAndSatellite"
+        android:layout_alignStart="@id/signalAndSatellite"
+        android:gravity="center"
+        android:text="@string/battery"
+        android:textColor="#ffffff" />
+
+    <TextView
+        android:id="@+id/batteryLvl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/battery"
+        android:layout_below="@id/signalAndSatellite"
+        android:layout_centerHorizontal="true"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="10dp"
+        android:gravity="center"
+        android:text="@string/percent"
+        android:textColor="#ffffff" />
+
+    <TextView
         android:id="@+id/currentAltitudeSinceStart"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_below="@id/signalAndSatellite"
+        android:layout_below="@id/battery"
         android:layout_centerHorizontal="true"
         android:layout_gravity="center_vertical"
         android:gravity="center"
@@ -137,7 +197,7 @@
         android:layout_height="wrap_content"
         android:layout_alignStart="@+id/btn_stop"
         android:layout_below="@+id/btn_stop"
-        android:text="Drone Position"
+        android:text="@string/drone_position"
         android:textColor="#ffffff" />
 
     <TextView
@@ -156,7 +216,7 @@
         android:layout_height="wrap_content"
         android:layout_alignStart="@+id/btn_stop"
         android:layout_below="@+id/positionGPS"
-        android:text="Phone Position"
+        android:text="@string/phone_position"
         android:textColor="#ffffff" />
 
     <TextView
@@ -192,8 +252,8 @@
         android:id="@+id/velocityXTxt"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_mode"
-        android:layout_below="@+id/btn_mode"
+        android:layout_alignStart="@+id/btn_follow_mode"
+        android:layout_below="@+id/btn_follow_mode"
         android:text="@string/pitch"
         android:textColor="#ffffff" />
 
@@ -201,7 +261,7 @@
         android:id="@+id/velocityX"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_mode"
+        android:layout_alignStart="@+id/btn_follow_mode"
         android:layout_below="@+id/velocityXTxt"
         android:layout_marginBottom="10dp"
         android:text=""
@@ -211,7 +271,7 @@
         android:id="@+id/velocityYTxt"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_mode"
+        android:layout_alignStart="@+id/btn_follow_mode"
         android:layout_below="@+id/velocityX"
         android:text="@string/roll"
         android:textColor="#ffffff" />
@@ -220,7 +280,7 @@
         android:id="@+id/velocityY"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_mode"
+        android:layout_alignStart="@+id/btn_follow_mode"
         android:layout_below="@+id/velocityYTxt"
         android:layout_marginBottom="10dp"
         android:text=""
@@ -230,7 +290,7 @@
         android:id="@+id/velocityZTxt"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_mode"
+        android:layout_alignStart="@+id/btn_follow_mode"
         android:layout_below="@+id/velocityY"
         android:text="@string/yaw"
         android:textColor="#ffffff" />
@@ -239,7 +299,7 @@
         android:id="@+id/velocityZ"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_mode"
+        android:layout_alignStart="@+id/btn_follow_mode"
         android:layout_below="@+id/velocityZTxt"
         android:layout_marginBottom="10dp"
         android:text=""
@@ -249,7 +309,7 @@
         android:id="@+id/FlightTimeTxt"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_mode"
+        android:layout_alignStart="@+id/btn_follow_mode"
         android:layout_below="@+id/velocityZ"
         android:text="@string/flightTime"
         android:textColor="#ffffff" />
@@ -258,7 +318,7 @@
         android:id="@+id/flightTime"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/btn_mode"
+        android:layout_alignStart="@+id/btn_follow_mode"
         android:layout_below="@+id/FlightTimeTxt"
         android:layout_marginBottom="10dp"
         android:text=""
@@ -288,28 +348,6 @@
         <!--android:layout_alignBottom="@+id/btn_rec"-->
         <!--android:layout_toStartOf="@+id/btn_rec" />-->
 
-    <Button
-        android:id="@+id/btn_takeoff"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="11dp"
-        android:text="@string/takeoff"
-        android:layout_marginBottom="15dp"
-        android:textSize="12sp" />
-
-    <Button
-        android:id="@+id/btn_land"
-        android:layout_width="wrap_content"
-        android:layout_height="@dimen/btn_height"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="11dp"
-        android:text="@string/land"
-        android:layout_marginBottom="15dp"
-        android:visibility="gone"
-        android:textSize="12sp" />
 
 
 

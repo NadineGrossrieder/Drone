@@ -30,4 +30,8 @@
     <string name="takeoff">Takeoff</string>
     <string name="land">Land</string>
     <string name="take_photo">take photo</string>
+    <string name="battery">Battery :</string>
+    <string name="percent">0%</string>
+    <string name="drone_position">Drone Position</string>
+    <string name="phone_position">Phone Position</string>
 </resources>
