@@ -2,6 +2,7 @@ package renault.drone.dronerisv;
 
 import android.Manifest;
 import android.app.Activity;
+import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
 import android.os.Build;
 import android.os.Bundle;
@@ -14,12 +15,14 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import renault.drone.risvrenault.Drone;
 import renault.drone.risvrenault.FollowQRCode;
+import renault.drone.risvrenault.MissionListener;
 
 public class MainActivity extends Activity implements View.OnClickListener, TextureView.SurfaceTextureListener {
 
@@ -63,6 +66,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
 
     private TextView flightTime;
 
+    private ImageView photo;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +76,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
         this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
 
+        // CHECK permissions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.VIBRATE,
@@ -84,6 +90,10 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                     , 1);
         }
 
+        initUI();
+        drone = new Drone(this);
+
+
     }
 
     @Override
@@ -91,23 +101,52 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
         Log.e(TAG, "onResume");
         super.onResume();
 
-        initUI();
-
-
-        drone = new Drone(this);
-
-
-//        if (mVideoSurface == null) {
-//            Log.e(TAG, "mVideoSurface is null");
-//        }
-        mVideoSurface.setSurfaceTextureListener(this);
-
-        drone.initLiveView();
-
         interrupted = false;
 
         isFirst = true;
         startDisplayThread();
+
+        MissionListener missionListener = new MissionListener() {
+            @Override
+            public void onResultFollow(Boolean isSuccess) {
+
+            }
+
+            @Override
+            public void onResultCarCrash(Boolean isSuccess, String message, final Bitmap[] photos) {
+                showToast(message);
+
+                if(photos != null){
+                    showToast("" + photos[0].getHeight());
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            photo.setVisibility(View.VISIBLE);
+                            photo.setImageBitmap(photos[0]);
+                            photo.setImageBitmap(photos[1]);
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onResultLand(Boolean isSuccess, String error) {
+
+            }
+
+            @Override
+            public void onResultLaunch(Boolean isSuccess, String error) {
+
+            }
+        };
+
+        drone.callbackRegisterEndMission(missionListener);
+
+//        mVideoSurface.setSurfaceTextureListener(this);
+//
+//        drone.initLiveView();
+//
     }
 
     @Override
@@ -139,6 +178,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
         if (null != mVideoSurface) {
             mVideoSurface.setSurfaceTextureListener(this);
         }
+
+        photo = (ImageView) findViewById(R.id.image);
 
 
         altitudeTxt = (TextView) findViewById(R.id.altitude);

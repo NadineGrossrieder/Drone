@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Environment;
 import android.support.annotation.NonNull;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -41,8 +42,15 @@ public class Camera {
     private String whiteBalanceValue;
     private String fileFormat;
     private int availableRecordingTime;
-    private MediaFile media;
+    private MediaFile media1;
+    private MediaFile media2;
     private MediaManager mediaManager;
+    private Bitmap[] bitmapArray;
+    private int currentDownloadMedia = 0;
+    private File filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);;
+    private Bitmap bitmap1;
+    private Bitmap bitmap2;
+    private int retry = 0;
 
     protected Camera(Aircraft drone) {
         this.drone = drone;
@@ -148,18 +156,13 @@ public class Camera {
             }
         });
 
-//        if (mediaManager == null) {
-//            mediaManager = drone.getCamera().getMediaManager();
-//        }
-
-
         // TODO handle error
 
 
         return null;
     }
 
-    public Bitmap getTwoLastPictures(final Context activity) {
+    void getTwoLastPictures(final Context activity, final MissionListener missionListener) {
         try {
             Thread th = new Thread(new Runnable() {
                 public void run() {
@@ -172,6 +175,15 @@ public class Camera {
                     if (!drone.getCamera().isMediaDownloadModeSupported()) {
                         Toast.makeText(activity, "Not supported", Toast.LENGTH_SHORT).show();
                     } else {
+
+                        final DownloadListener downloadListener = new DownloadListener() {
+                            @Override
+                            public void onFinish() {
+                                bitmapArray = new Bitmap[]{bitmap1, bitmap2};
+                                missionListener.onResultCarCrash(false, "Medias downloaded with success", bitmapArray);
+                            }
+                        };
+
                         drone.getCamera().setMode(SettingsDefinitions.CameraMode.MEDIA_DOWNLOAD, new CommonCallbacks.CompletionCallback() {
                             @Override
                             public void onResult(DJIError djiError) {
@@ -179,11 +191,8 @@ public class Camera {
                                     try {
                                         if (drone != null && drone.getCamera() != null && drone.getCamera().getMediaManager() != null) {
                                             drone.getCamera().getMediaManager().fetchMediaList(new MediaManager.DownloadListener<List<MediaFile>>() {
-                                                String str;
-
                                                 @Override
                                                 public void onStart() {
-                                                    Toast.makeText(activity, "start", Toast.LENGTH_SHORT).show();
                                                 }
 
                                                 @Override
@@ -198,102 +207,120 @@ public class Camera {
 
                                                 @Override
                                                 public void onSuccess(List<MediaFile> djiMedias) {
-                                                    Toast.makeText(activity, "Success", Toast.LENGTH_SHORT).show();
 
                                                     try {
                                                         if (djiMedias != null && !djiMedias.isEmpty()) {
-                                                            Toast.makeText(activity, "not empty", Toast.LENGTH_SHORT).show();
 
-                                                            media = djiMedias.get(0);
-
-                                                            Toast.makeText(activity, media.getFileName(), Toast.LENGTH_SHORT).show();
-
-                                                            File file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-//                                              File file = new File("/download");
-
+                                                            media1 = djiMedias.get(djiMedias.size()-1);
+                                                            media2 = djiMedias.get(djiMedias.size()-2);
 
                                                             MediaManager.DownloadListener<String> completion = new MediaManager.DownloadListener<String>() {
                                                                 @Override
                                                                 public void onStart() {
-                                                                    Toast.makeText(activity, "start fetch media data", Toast.LENGTH_SHORT).show();
-
                                                                 }
 
                                                                 @Override
-                                                                public void onRateUpdate(long l, long l1, long l2) {
+                                                                public void onRateUpdate(long total, long current, long persize) {
+                                                                    if(missionListener != null) {
+                                                                        float currentPercent = ((float)current / (float) total)*100;
+                                                                        missionListener.onResultCarCrash(true, "File " + currentDownloadMedia + " downloaded at " + currentPercent + "%", null);
 
+                                                                    }
                                                                 }
 
                                                                 @Override
-                                                                public void onProgress(long l, long l1) {
+                                                                public void onProgress(long total, long current) {
 
                                                                 }
 
                                                                 @Override
                                                                 public void onSuccess(String s) {
-                                                                    Toast.makeText(activity, "fetch media data success : " + s, Toast.LENGTH_SHORT).show();
+                                                                    if(missionListener != null) {
+                                                                        BitmapFactory.Options options = new BitmapFactory.Options();
+                                                                        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
 
+                                                                        missionListener.onResultCarCrash(true,"File download in : " + s, null);
+                                                                        if(currentDownloadMedia == 2){
+                                                                            currentDownloadMedia = 0;
+
+                                                                            bitmap2 = BitmapFactory.decodeFile(filePath.getAbsolutePath() + media2.getFileName(), options);
+
+                                                                            downloadListener.onFinish();
+                                                                        }
+                                                                        else if(currentDownloadMedia == 1 ){
+                                                                            currentDownloadMedia = 2;
+                                                                            bitmap1 = BitmapFactory.decodeFile(filePath.getAbsolutePath() + media1.getFileName(), options);
+                                                                        }
+                                                                    }
                                                                 }
 
                                                                 @Override
                                                                 public void onFailure(DJIError djiError) {
                                                                     if (djiError != null) {
-                                                                        Toast.makeText(activity, "fetch media data fail" + djiError, Toast.LENGTH_LONG).show();
+                                                                        if(missionListener != null) {
+                                                                            missionListener.onResultCarCrash(true, "Fetch media data fail : " + djiError, null);
+                                                                        }
+
+                                                                        if(retry <=1) {
+                                                                            getTwoLastPictures(activity, missionListener);
+                                                                            retry++;
+                                                                        }
                                                                     }
 
                                                                 }
                                                             };
 
-                                                            if (media == null) {
-                                                                Toast.makeText(activity, "media is null", Toast.LENGTH_SHORT).show();
-                                                            }
-                                                            if (file == null) {
-                                                                Toast.makeText(activity, "file is null " + file.toString(), Toast.LENGTH_SHORT).show();
-                                                            }
-
-
-                                                            if (completion == null) {
-                                                                Toast.makeText(activity, "completion is null", Toast.LENGTH_SHORT).show();
-                                                            }
+                                                            if (media1 == null || media2 == null) {
+                                                                if(missionListener != null) {
+                                                                    missionListener.onResultCarCrash(false, "Media is null", null);
+                                                                }                                                            }
 
                                                             if(mediaManager == null){
-                                                                Toast.makeText(activity, "media manager is null", Toast.LENGTH_SHORT).show();
                                                                 mediaManager = drone.getCamera().getMediaManager();
                                                             }
 
-                                                            mediaManager.fetchMediaData(media, file, "carcrash1", completion);
-
-
-                                                            str = "Total Media files:"
-                                                                    + djiMedias.size()
-                                                                    + "\n"
-                                                                    + "Media 1: "
-                                                                    + djiMedias.get(0).getFileName();
+                                                            currentDownloadMedia = 1;
+                                                            //Download file 1
+                                                            mediaManager.fetchMediaData(media1, filePath, media1.getFileName(), completion);
+                                                            //Download file 2
+                                                            mediaManager.fetchMediaData(media2, filePath, media2.getFileName(), completion);
                                                         } else {
-                                                            str = "No Media in SD Card";
+                                                            if(missionListener != null) {
+                                                                missionListener.onResultCarCrash(false,  "No Media in SD Card", null);
+                                                            }
                                                         }
                                                     } catch (Exception e) {
-                                                        Toast.makeText(activity, "fetch media " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                                        if(missionListener != null) {
+                                                            missionListener.onResultCarCrash(false, e.getMessage(), null);
+                                                        }
                                                     }
                                                 }
 
                                                 @Override
                                                 public void onFailure(DJIError djiError) {
                                                     if (djiError != null) {
-                                                        Toast.makeText(activity, "fetch media fail : " + djiError.getDescription(), Toast.LENGTH_SHORT).show();
+                                                        if(missionListener != null) {
+                                                            missionListener.onResultCarCrash(false,"Fetch media list fail : " + djiError.getDescription(), null);
+                                                        }
                                                     }
                                                 }
                                             });
                                         } else {
-                                            Toast.makeText(activity, "Something is null", Toast.LENGTH_SHORT).show();
+                                            if(missionListener != null) {
+                                                missionListener.onResultCarCrash(false,"MediaManager is null or Camera is null", null);
+                                            }
                                         }
                                     } catch (Exception e) {
-                                        Toast.makeText(activity, "Set mode catch " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                        if(missionListener != null) {
+                                            missionListener.onResultCarCrash(false, e.getMessage(), null);
+                                        }
+                                        Toast.makeText(activity, "Set mode catch error" + e.getMessage(), Toast.LENGTH_SHORT).show();
 
                                     }
                                 } else {
-                                    Toast.makeText(activity, "set mode error : " + djiError.getDescription(), Toast.LENGTH_SHORT).show();
-
+                                    if(missionListener != null) {
+                                        missionListener.onResultCarCrash(false, djiError.getDescription(), null);
+                                    }
                                 }
 
                             }
@@ -305,8 +332,6 @@ public class Camera {
         } catch (Exception e) {
             Toast.makeText(activity, "retrieve picture : " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
-
-        return null;
     }
 
 
@@ -339,4 +364,16 @@ public class Camera {
     public int getAvailableRecordingTime() {
         return availableRecordingTime;
     }
+
+
+
+
+    public interface DownloadListener{
+
+        void onFinish();
+
+
+    }
+
 }
+

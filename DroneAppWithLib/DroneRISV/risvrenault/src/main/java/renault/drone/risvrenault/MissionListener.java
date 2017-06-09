@@ -12,7 +12,7 @@ public interface MissionListener{
 
     void onResultFollow(Boolean isSuccess);
 
-    void onResultCarCrash(Boolean isSuccess, Bitmap[] photos);
+    void onResultCarCrash(Boolean isSuccess, String message, Bitmap[] photos);
 
     void onResultLand(Boolean isSuccess, String error);
 
