@@ -73,8 +73,8 @@ public class Drone {
     private static final String TAG = "Drone";
     static final Float SPEED = 0.2f;
 
-    static final Float FIRST_ALTITUDE = 10.0f;
-    static final Float SECOND_ALTITUDE = 5.0f;
+    static final Float FIRST_ALTITUDE = 3.0f;
+    static final Float SECOND_ALTITUDE = 2.0f;
     static final Float ALTITUDE_MARGIN = 0.5f;
 
     private Mission currentMission = Mission.NO_MISSION;
