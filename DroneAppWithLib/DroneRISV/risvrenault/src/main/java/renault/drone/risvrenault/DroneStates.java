@@ -16,8 +16,6 @@ import dji.sdk.products.Aircraft;
 
 public class DroneStates {
 
-
-    private Aircraft drone;
     private int nbSatellite;
     private GPSSignalLevel signalStrenght;
     private Orientation orientation;
@@ -35,7 +33,6 @@ public class DroneStates {
     private int remainingFlightTime;
 
      DroneStates(Aircraft drone) {
-        this.drone = drone;
 
         drone.getFlightController().setStateCallback(new FlightControllerState.Callback() {
             @Override
@@ -115,7 +112,7 @@ public class DroneStates {
     /**
      * Retrieves  GPS location information of the drone
      *
-     * @return An instance of LocationCoordinate3D reprenting the current GPS position of the drone
+     * @return An instance of LocationCoordinate3D that represent the current GPS position of the drone
      */
     public LocationCoordinate3D getLocation() {
         return location;
@@ -150,7 +147,7 @@ public class DroneStates {
     }
 
     /**
-     * Retrieves the total time, in secondes, since the drone was powered on
+     * Retrieves the total time, in seconds, since the drone was powered on
      *
      * @return An int representing the flight time in seconds
      */

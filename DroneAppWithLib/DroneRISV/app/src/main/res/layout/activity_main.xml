@@ -249,6 +249,16 @@
         android:textColor="#ffffff" />
 
     <TextView
+        android:id="@+id/DownloadPercent"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/btn_stop"
+        android:layout_below="@+id/isFlyingBool"
+        android:layout_marginBottom="15dp"
+        android:text=""
+        android:textColor="#ffffff" />
+
+    <TextView
         android:id="@+id/velocityXTxt"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
@@ -323,6 +333,7 @@
         android:layout_marginBottom="10dp"
         android:text=""
         android:textColor="#ffffff" />
+
 
     <!--<ToggleButton-->
         <!--android:id="@+id/btn_rec"-->

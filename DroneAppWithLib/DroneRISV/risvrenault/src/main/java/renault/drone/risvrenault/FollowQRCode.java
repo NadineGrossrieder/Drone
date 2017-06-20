@@ -41,10 +41,12 @@ import dji.sdk.sdkmanager.DJISDKManager;
 public class FollowQRCode extends View {
     private static final String TAG = FollowQRCode.class.getName();
 
-    static final Float SPEED = 0.2f;
-    static final Float FOV = 80.0f;
+    private static final Float SPEED = 0.2f;
+    private static final Float FOV = 80.0f;
+    private static final float MIN_ALTITUDE = 2.0f;
 
     private static Float currentAltitudeSinceStart;
+    private Float altitudeToGo;
 
 
     private Rect targetRect = new Rect(500, 275, 750, 515);
@@ -88,6 +90,10 @@ public class FollowQRCode extends View {
     private void init(Context context) {
         Toast.makeText(context, "init", Toast.LENGTH_SHORT).show();
 
+    }
+
+    protected void setAltitude(float altitude){
+        altitudeToGo = altitude;
     }
 
 
@@ -373,16 +379,13 @@ public class FollowQRCode extends View {
 //            }
 
             try {
-                if (droneStates.getAltitudeFromGPS() > 2 || droneStates.getAltitudeFromSensor() > 2) {
-//                    scanningQRCodeState += "Adjust movement\n\r";
-
+                if (droneStates.getAltitudeFromGPS() > MIN_ALTITUDE || droneStates.getAltitudeFromSensor() > MIN_ALTITUDE) {
                     //preparations in order to get the Virtual Stick Mode available
                     drone.getFlightController().setVirtualStickModeEnabled(true, null);
                     drone.getFlightController().setFlightOrientationMode(FlightOrientationMode.AIRCRAFT_HEADING, null);
                     drone.getFlightController().setTerrainFollowModeEnabled(false, null);
                     drone.getFlightController().setTripodModeEnabled(false, null);
                     Log.d(TAG, "something running: " + DJISDKManager.getInstance().getMissionControl().getRunningElement());
-
 
                     if (drone.getFlightController().isVirtualStickControlModeAvailable()) {
                         Log.d(TAG, "virtual stick control mode available");
@@ -395,7 +398,13 @@ public class FollowQRCode extends View {
 //                        ((Aircraft) currentDrone).getFlightController().setYawControlMode(YawControlMode.ANGLE);
                         drone.getFlightController().setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
 //                        ((Aircraft) currentDrone).getFlightController().setVerticalControlMode(VerticalControlMode.POSITION);
-                        drone.getFlightController().setVerticalControlMode(VerticalControlMode.VELOCITY);
+
+                        if(altitudeToGo != null){
+                            drone.getFlightController().setVerticalControlMode(VerticalControlMode.POSITION);
+                        }
+                        else {
+                            drone.getFlightController().setVerticalControlMode(VerticalControlMode.VELOCITY);
+                        }
                         drone.getFlightController().setRollPitchCoordinateSystem(FlightCoordinateSystem.BODY);
 
                         // Disable the landing protection otherwise, during auto-landing, the downwards facing vision sensor will check if the ground surface is flat enough for a safe landing
@@ -424,9 +433,12 @@ public class FollowQRCode extends View {
                     computeSpeed(qrMassPoint);
 
                     FlightControlData move = new FlightControlData(0, 0, 0, 0);
+                    if(altitudeToGo != null) {
+                        move = new FlightControlData(0, 0, 0, altitudeToGo);
+                    }
 
 //                    if (targetRect.contains(qrMassPoint.x, qrMassPoint.y) && isLandMode()) {
-                    if (targetRect.contains(qrMassPoint.x, qrMassPoint.y)) {
+                    if (targetRect.contains(qrMassPoint.x, qrMassPoint.y) && altitudeToGo == null) {
                         //decrease altitude
                         state = "decrease altitude";
                         if (drone.getFlightController().isLandingGearMovable()) {
@@ -597,7 +609,7 @@ public class FollowQRCode extends View {
          * Called when a frame does not contain any QR code, this increase the number of frame
          * without QR code and delete the previous rectangles drawn on the canvas. When a certain
          * amount of frames without QR code are reached the autopilot is restarted.
-         * Since the two functionnalities (autonomous flight & detection of QR code) have not
+         * Since the two functionality (autonomous flight & detection of QR code) have not
          * been tested together the startautopilot is commented and instead we set a default
          * movement as follow : currentDrone.moveDroneInMeters(0f,0f,0f,0f);
          */

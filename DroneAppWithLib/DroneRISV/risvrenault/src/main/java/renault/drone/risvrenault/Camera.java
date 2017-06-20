@@ -3,10 +3,8 @@ package renault.drone.risvrenault;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
 import android.os.Environment;
 import android.support.annotation.NonNull;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -22,7 +20,6 @@ import dji.common.util.CommonCallbacks;
 import dji.sdk.camera.MediaFile;
 import dji.sdk.camera.MediaManager;
 import dji.sdk.products.Aircraft;
-import dji.sdk.sdkmanager.DJISDKManager;
 
 /**
  * Created by Nadine Grossrieder on 10.05.2017.
@@ -42,17 +39,25 @@ public class Camera {
     private String whiteBalanceValue;
     private String fileFormat;
     private int availableRecordingTime;
-    private MediaFile media1;
-    private MediaFile media2;
+
     private MediaManager mediaManager;
     private Bitmap[] bitmapArray;
     private int currentDownloadMedia = 0;
-    private File filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);;
-    private Bitmap bitmap1;
-    private Bitmap bitmap2;
+    private final File filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+
     private int retry = 0;
 
-    protected Camera(Aircraft drone) {
+    private MediaFile media1;
+    private MediaFile media2;
+
+    private Bitmap bitmap1;
+    private Bitmap bitmap2;
+
+    private String filename1;
+    private String filename2;
+
+
+    Camera(Aircraft drone) {
         this.drone = drone;
 
         drone.getGimbal().setStateCallback(new GimbalState.Callback() {
@@ -128,10 +133,8 @@ public class Camera {
 
     /**
      * Take an picture with the drone's camera
-     *
-     * @return A Bitmap representing the last picture taken
-     */
-    public Bitmap takePicture(final Context activity) {
+     **/
+    void takePicture(final Context activity) {
         //TODO handle state
         drone.getCamera().setMode(SettingsDefinitions.CameraMode.SHOOT_PHOTO, new CommonCallbacks.CompletionCallback() {
             @Override
@@ -158,11 +161,9 @@ public class Camera {
 
         // TODO handle error
 
-
-        return null;
     }
 
-    void getTwoLastPictures(final Context activity, final MissionListener missionListener) {
+    void getTwoLastPictures(final Context activity, final MissionListener missionListener, final Drone droneContext) {
         try {
             Thread th = new Thread(new Runnable() {
                 public void run() {
@@ -180,7 +181,8 @@ public class Camera {
                             @Override
                             public void onFinish() {
                                 bitmapArray = new Bitmap[]{bitmap1, bitmap2};
-                                missionListener.onResultCarCrash(false, "Medias downloaded with success", bitmapArray);
+                                missionListener.onResultCarCrash(false, "Medias downloaded with success", 0, bitmapArray);
+                                droneContext.finishMission();
                             }
                         };
 
@@ -223,7 +225,7 @@ public class Camera {
                                                                 public void onRateUpdate(long total, long current, long persize) {
                                                                     if(missionListener != null) {
                                                                         float currentPercent = ((float)current / (float) total)*100;
-                                                                        missionListener.onResultCarCrash(true, "File " + currentDownloadMedia + " downloaded at " + currentPercent + "%", null);
+                                                                        missionListener.onResultCarCrash(true, "File " + currentDownloadMedia +  "/2 downloaded at ", currentPercent,  null);
 
                                                                     }
                                                                 }
@@ -239,17 +241,18 @@ public class Camera {
                                                                         BitmapFactory.Options options = new BitmapFactory.Options();
                                                                         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
 
-                                                                        missionListener.onResultCarCrash(true,"File download in : " + s, null);
+                                                                        missionListener.onResultCarCrash(true,"File download in : " + s, 0, null);
                                                                         if(currentDownloadMedia == 2){
                                                                             currentDownloadMedia = 0;
 
-                                                                            bitmap2 = BitmapFactory.decodeFile(filePath.getAbsolutePath() + media2.getFileName(), options);
+                                                                            bitmap2 = BitmapFactory.decodeFile(filePath.getAbsolutePath() + "/" + filename2 + ".jpeg", options);
+                                                                            missionListener.onResultCarCrash(true,"Download Finished : " + s, 0, null);
 
                                                                             downloadListener.onFinish();
                                                                         }
                                                                         else if(currentDownloadMedia == 1 ){
                                                                             currentDownloadMedia = 2;
-                                                                            bitmap1 = BitmapFactory.decodeFile(filePath.getAbsolutePath() + media1.getFileName(), options);
+                                                                            bitmap1 = BitmapFactory.decodeFile(filePath.getAbsolutePath() + "/" + filename1 +".jpeg", options);
                                                                         }
                                                                     }
                                                                 }
@@ -258,12 +261,12 @@ public class Camera {
                                                                 public void onFailure(DJIError djiError) {
                                                                     if (djiError != null) {
                                                                         if(missionListener != null) {
-                                                                            missionListener.onResultCarCrash(true, "Fetch media data fail : " + djiError, null);
+                                                                            missionListener.onResultCarCrash(true, "Fetch media data fail : " + djiError, 0, null);
                                                                         }
 
                                                                         if(retry <=1) {
-                                                                            getTwoLastPictures(activity, missionListener);
                                                                             retry++;
+                                                                            getTwoLastPictures(activity, missionListener, droneContext);
                                                                         }
                                                                     }
 
@@ -272,26 +275,32 @@ public class Camera {
 
                                                             if (media1 == null || media2 == null) {
                                                                 if(missionListener != null) {
-                                                                    missionListener.onResultCarCrash(false, "Media is null", null);
-                                                                }                                                            }
-
-                                                            if(mediaManager == null){
-                                                                mediaManager = drone.getCamera().getMediaManager();
+                                                                    missionListener.onResultCarCrash(false, "Media is null", 0, null);
+                                                                }
                                                             }
+                                                            else {
 
-                                                            currentDownloadMedia = 1;
-                                                            //Download file 1
-                                                            mediaManager.fetchMediaData(media1, filePath, media1.getFileName(), completion);
-                                                            //Download file 2
-                                                            mediaManager.fetchMediaData(media2, filePath, media2.getFileName(), completion);
+                                                                if (mediaManager == null) {
+                                                                    mediaManager = drone.getCamera().getMediaManager();
+                                                                }
+
+                                                                currentDownloadMedia = 1;
+                                                                //Download file 1
+                                                                filename1 = "carcrash1";
+                                                                mediaManager.fetchMediaData(media1, filePath, filename1, completion);
+
+                                                                //Download file 2
+                                                                filename2 = "carcrash2";
+                                                                mediaManager.fetchMediaData(media2, filePath, filename2, completion);
+                                                            }
                                                         } else {
                                                             if(missionListener != null) {
-                                                                missionListener.onResultCarCrash(false,  "No Media in SD Card", null);
+                                                                missionListener.onResultCarCrash(false,  "No Media in SD Card", 0, null);
                                                             }
                                                         }
                                                     } catch (Exception e) {
                                                         if(missionListener != null) {
-                                                            missionListener.onResultCarCrash(false, e.getMessage(), null);
+                                                            missionListener.onResultCarCrash(false, e.getMessage(), 0, null);
                                                         }
                                                     }
                                                 }
@@ -300,26 +309,26 @@ public class Camera {
                                                 public void onFailure(DJIError djiError) {
                                                     if (djiError != null) {
                                                         if(missionListener != null) {
-                                                            missionListener.onResultCarCrash(false,"Fetch media list fail : " + djiError.getDescription(), null);
+                                                            missionListener.onResultCarCrash(false,"Fetch media list fail : " + djiError.getDescription(), 0, null);
                                                         }
                                                     }
                                                 }
                                             });
                                         } else {
                                             if(missionListener != null) {
-                                                missionListener.onResultCarCrash(false,"MediaManager is null or Camera is null", null);
+                                                missionListener.onResultCarCrash(false,"MediaManager is null or Camera is null", 0, null);
                                             }
                                         }
                                     } catch (Exception e) {
                                         if(missionListener != null) {
-                                            missionListener.onResultCarCrash(false, e.getMessage(), null);
+                                            missionListener.onResultCarCrash(false, e.getMessage(), 0, null);
                                         }
-                                        Toast.makeText(activity, "Set mode catch error" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(activity, "Set mode catch error : " + e.getMessage(), Toast.LENGTH_SHORT).show();
 
                                     }
                                 } else {
                                     if(missionListener != null) {
-                                        missionListener.onResultCarCrash(false, djiError.getDescription(), null);
+                                        missionListener.onResultCarCrash(false, djiError.getDescription(), 0, null);
                                     }
                                 }
 
@@ -338,7 +347,7 @@ public class Camera {
     /**
      * Retrieves information about the orientation (pitch, roll, yaw) of the gimbal (camera)
      *
-     * @return An instance of Orientation representting the pitch, roll and yaw of the gimbal
+     * @return An instance of Orientation representing the pitch, roll and yaw of the gimbal
      */
 
     public Orientation getGimbalOrientation() {

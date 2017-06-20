@@ -20,9 +20,12 @@ import static com.google.android.gms.location.LocationServices.FusedLocationApi;
 
 /**
  * Created by Nadine Grossrieder on 23.05.2017.
+ *
+ * Service to get GPS position of the phone
+ *
  */
 
-class PhoneGPSLocation extends Service
+public class PhoneGPSLocation extends Service
 {
     private static final String TAG = PhoneGPSLocation.class.getName();
     private static final int UPDATE_FREQUENCY = 5000;

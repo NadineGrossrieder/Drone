@@ -3,9 +3,12 @@ package renault.drone.dronerisv;
 import android.Manifest;
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.SurfaceTexture;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -14,11 +17,9 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
 import renault.drone.risvrenault.Drone;
 import renault.drone.risvrenault.FollowQRCode;
@@ -40,6 +41,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
     private TextView gpsTxt;
     private TextView phoneGPSText;
     private TextView isFlyingTxt;
+    private TextView downloadPercent;
 
     private int sWidth = -1;
     private int sHeight = -1;
@@ -91,16 +93,19 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
         }
 
         initUI();
+
+        // Register the application
         drone = new Drone(this);
-
-
     }
 
     @Override
     public void onResume() {
+
         Log.e(TAG, "onResume");
         super.onResume();
+        drone.initLiveVideo();
 
+        drone.resumeLiveVideo(this);
         interrupted = false;
 
         isFirst = true;
@@ -113,18 +118,33 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
             }
 
             @Override
-            public void onResultCarCrash(Boolean isSuccess, String message, final Bitmap[] photos) {
-                showToast(message);
+            public void onResultCarCrash(Boolean isSuccess, final String message, final float percentDownload, final Bitmap[] photos) {
 
-                if(photos != null){
-                    showToast("" + photos[0].getHeight());
+                if (percentDownload > 0) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            downloadPercent.setVisibility(View.VISIBLE);
+                            downloadPercent.setText(message + percentDownload);
+                        }
+                    });
+                } else {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            downloadPercent.setVisibility(View.GONE);
+                            showToast(message);
+                        }
+                    });
+                }
 
+                if (photos != null && photos[0] != null && photos[1] != null) {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             photo.setVisibility(View.VISIBLE);
                             photo.setImageBitmap(photos[0]);
-                            photo.setImageBitmap(photos[1]);
+//                            photo.setImageBitmap(photos[1]);
                         }
                     });
                 }
@@ -144,16 +164,14 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
         drone.callbackRegisterEndMission(missionListener);
 
 //        mVideoSurface.setSurfaceTextureListener(this);
-//
 //        drone.initLiveView();
-//
+
     }
 
     @Override
     public void onPause() {
         Log.e(TAG, "onPause");
         interrupted = true;
-        drone.unInitLiveView();
         super.onPause();
     }
 
@@ -188,6 +206,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
 
         isFlyingTxt = (TextView) findViewById(R.id.isFlyingBool);
 
+        downloadPercent = (TextView) findViewById(R.id.DownloadPercent);
+
         velocityX = (TextView) findViewById(R.id.velocityX);
         velocityY = (TextView) findViewById(R.id.velocityY);
         velocityZ = (TextView) findViewById(R.id.velocityZ);
@@ -205,7 +225,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
         signalGPS = (TextView) findViewById(R.id.signalGPS);
         battery = (TextView) findViewById(R.id.batteryLvl);
 //        currentAltitudeSinceStart = (TextView) findViewById(R.id.currentAltitudeSinceStart);
-
 
         mStopBtn.setOnClickListener(this);
         btnTakeoff.setOnClickListener(this);
@@ -229,7 +248,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_stop: {
-                drone.setMission(Drone.Mission.NO_MISSION);
+                drone.abortMission();
                 break;
             }
             case R.id.btn_takeoff: {
@@ -248,10 +267,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                 drone.setMission(Drone.Mission.FOLLOW);
                 break;
             }
-//            case R.id.btn_land_mode: {
-//                drone.setMission(Drone.Mission.LAND);
-//                break;
-//            }
             default:
                 break;
         }
@@ -275,7 +290,10 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                                                 @Override
                                                 public void run() {
                                                     isFirst = !(drone.init(getApplicationContext(), mVideoSurface, cameraZone, drone.getDrone(), sWidth, sHeight));
-                                                    drone.initLiveView();
+//                                                    mVideoSurface.setSurfaceTextureListener(MainActivity.this);
+//
+//                                                    drone.initLiveView();
+
                                                 }
                                             });
                                             speedRefresh = SPEED_REFRESH;
@@ -288,7 +306,9 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                                     if (drone.getDroneStates() != null) {
                                         altitudeTxt.setText("Altitude sensor: " + drone.getDroneStates().getAltitudeFromSensor() + "m / GPS : " + drone.getDroneStates().getAltitudeFromGPS() + "m");
                                         gpsTxt.setText(drone.getGPSPositionDrone().getLatitude() + " " + drone.getGPSPositionDrone().getLongitude());
-                                        phoneGPSText.setText(drone.getGPSPositionRC().getLatitude() + " " + drone.getGPSPositionRC().getLongitude());
+                                        if(drone.getGPSPositionRC() != null) {
+                                            phoneGPSText.setText(drone.getGPSPositionRC().getLatitude() + " " + drone.getGPSPositionRC().getLongitude());
+                                        }
                                         isFlyingTxt.setText(String.valueOf(drone.getDroneStates().isFlying()));
 
                                         velocityX.setText(String.valueOf(drone.getDroneStates().getVelocityX()));
@@ -330,7 +350,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                                 }
                             } catch (Exception e) {
                                 Log.e(TAG, e.getMessage());
-//                                velocityZ.setText(e.getMessage());
+                                showToast(e.getMessage());
                             }
                         }
                     });
@@ -354,7 +374,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
 
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-        drone.onSurfaceTextureAvailable(surface, width, height);
+//        drone.onSurfaceTextureAvailable(surface, width, height);
 
     }
 
