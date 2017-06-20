@@ -1,0 +1,61 @@
+Drone drone = new Drone(this);
+
+drone.resumeLiveVideo(this);
+
+MissionListener missionListener = new MissionListener() {
+	@Override
+	public void onResultFollow(Boolean isSuccess) {
+
+	}
+
+	@Override
+	public void onResultCarCrash(Boolean isSuccess, final String message, final float percentDownload, final Bitmap[] photos) {
+
+		if (percentDownload > 0) {
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					downloadPercent.setVisibility(View.VISIBLE);
+					downloadPercent.setText(message + percentDownload);
+				}
+			});
+		} else {
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					downloadPercent.setVisibility(View.GONE);
+					showToast(message);
+				}
+			});
+		}
+
+		if (photos != null && photos[0] != null && photos[1] != null) {
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					photo.setVisibility(View.VISIBLE);
+					photo.setImageBitmap(photos[0]);
+//                            photo.setImageBitmap(photos[1]);
+				}
+			});
+		}
+	}
+
+	@Override
+	public void onResultLand(Boolean isSuccess, String error) {
+
+	}
+
+	@Override
+	public void onResultLaunch(Boolean isSuccess, String error) {
+
+	}
+};
+		
+drone.callbackRegisterEndMission(missionListener);
+
+(drone.init(getApplicationContext(), mVideoSurface, cameraZone, drone.getDrone(), sWidth, sHeight));
+
+
+
+drone.setMission(Drone.Mission.LAUNCH);
