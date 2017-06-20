@@ -10,11 +10,11 @@ import android.graphics.Bitmap;
 
 public interface MissionListener{
 
-    void onResultFollow(Boolean isSuccess);
+    void onResultFollow(Boolean isSuccess, String message);
 
     void onResultCarCrash(Boolean isSuccess, String message, float percentDownload, Bitmap[] photos);
 
-    void onResultLand(Boolean isSuccess, String error);
+    void onResultLand(Boolean isSuccess, String message);
 
-    void onResultLaunch(Boolean isSuccess, String error);
+    void onResultLaunch(Boolean isSuccess, String message);
 }

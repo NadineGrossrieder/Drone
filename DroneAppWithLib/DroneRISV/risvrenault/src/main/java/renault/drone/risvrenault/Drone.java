@@ -79,7 +79,7 @@ public class Drone {
     private static final Float FIRST_ALTITUDE = 10.0f;
     private static final Float SECOND_ALTITUDE = 5.0f;
     private static final Float ALTITUDE_MARGIN = 0.1f;
-    private static final float MIN_ALTITUDE = 2.0f;
+    private static final float MIN_ALTITUDE = 2.5f;
 
     private static final long WAIT_100MS = 100;
     private static final long WAIT_1000MS = 1000;
@@ -120,7 +120,6 @@ public class Drone {
     private Thread threadMission;
 
 
-
     public Drone(final Context activity) {
         Toast.makeText(activity, "Drone", Toast.LENGTH_SHORT).show();
 
@@ -133,8 +132,7 @@ public class Drone {
                     activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
 
 //                Toast.makeText(activity, "Authorisation must be granted", Toast.LENGTH_SHORT).show();
-            }
-            else {
+            } else {
                 if (!DJISDKManager.getInstance().hasSDKRegistered()) {
                     mHandler = new Handler(Looper.getMainLooper());
                     DJISDKManager.getInstance().registerApp(activity, mDJISDKManagerCallback);
@@ -146,7 +144,7 @@ public class Drone {
             }
 
             // The callback for receiving the raw H264 video data for camera live view
-            if(mReceivedVideoDataCallBack == null) {
+            if (mReceivedVideoDataCallBack == null) {
                 mReceivedVideoDataCallBack = new VideoFeeder.VideoDataCallback() {
                     @Override
                     public void onReceive(byte[] videoBuffer, int size) {
@@ -261,8 +259,7 @@ public class Drone {
                 activity.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED &&
                 activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(activity, "Already registered", Toast.LENGTH_SHORT).show();
-        }
-        else {
+        } else {
             if (DJISDKManager.getInstance().hasSDKRegistered() && activity != null && cameraView != null && baseProduct != null && cameraZone != null) {
                 initLiveView();
                 Toast.makeText(this.activity, "Aircraft : " + baseProduct.getModel().getDisplayName(), Toast.LENGTH_SHORT).show();
@@ -270,7 +267,6 @@ public class Drone {
                 // GET phone GPS position
                 intent = new Intent(this.activity, PhoneGPSLocation.class);
                 this.activity.startService(intent);
-
 
 
 //            this.activity = activity;
@@ -298,7 +294,6 @@ public class Drone {
 //
 //                }
 //            });
-
 
 
                 // GET downlink signal quality
@@ -334,18 +329,17 @@ public class Drone {
 //                };
 
                 isReady = true;
-            }
-            else if (activity != null){
-                if(!DJISDKManager.getInstance().hasSDKRegistered()) {
+            } else if (activity != null) {
+                if (!DJISDKManager.getInstance().hasSDKRegistered()) {
                     Toast.makeText(this.activity, "DJI registration has failed", Toast.LENGTH_SHORT).show();
                 }
-                if(cameraView == null ){
+                if (cameraView == null) {
                     Toast.makeText(this.activity, "TextureView is null", Toast.LENGTH_SHORT).show();
                 }
-                if(baseProduct == null){
+                if (baseProduct == null) {
                     Toast.makeText(this.activity, "Drone is null", Toast.LENGTH_SHORT).show();
                 }
-                if( cameraZone == null){
+                if (cameraZone == null) {
                     Toast.makeText(this.activity, "Instance of FollowQRCode is null", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -354,7 +348,7 @@ public class Drone {
     }
 
 
-    public void initLiveVideo(){
+    public void initLiveVideo() {
         mReceivedVideoDataCallBack = new VideoFeeder.VideoDataCallback() {
 
             @Override
@@ -366,7 +360,7 @@ public class Drone {
         };
     }
 
-    public void resumeLiveVideo(TextureView.SurfaceTextureListener listener){
+    public void resumeLiveVideo(TextureView.SurfaceTextureListener listener) {
         DJISDKManager.getInstance().startConnectionToProduct();
 
         if (drone == null || !drone.isConnected()) {
@@ -484,10 +478,10 @@ public class Drone {
     public boolean setMission(final Mission mission) {
         boolean isAuthorized = false;
 
-        if(isReady) {
+        if (isReady) {
             // TODO : check if mission is possible and start mission
 
-//            droneStates = new DroneStates(drone);
+            droneStates = new DroneStates(drone);
 
             switch (mission) {
                 case NO_MISSION:
@@ -510,7 +504,7 @@ public class Drone {
                     }
                     break;
                 case CAR_CRASH:
-                    if (currentMission != Mission.LAND) {
+                    if (currentMission != Mission.LAND && currentMission != Mission.FOLLOW) {
                         currentMission = mission;
                         Toast.makeText(activity, "Car Crash", Toast.LENGTH_SHORT).show();
 
@@ -527,55 +521,54 @@ public class Drone {
 
                                         Thread.sleep(WAIT_1000MS);
 
-                                        while (droneStates.getAltitudeFromGPS() < MIN_ALTITUDE - ALTITUDE_MARGIN || droneStates.getAltitudeFromGPS() > MIN_ALTITUDE + ALTITUDE_MARGIN) {
+                                        while (droneStates.getAltitudeFromGPS() < MIN_ALTITUDE - 0.2) {
                                             changeAltitude(MIN_ALTITUDE);
                                             Thread.sleep(WAIT_100MS);
                                         }
 
-
-                                        Thread threadFollow = new Thread(new Runnable() {
-                                            public void run() {
-                                                cameraZone.setAltitude(FIRST_ALTITUDE);
-                                                cameraZone.resume(activity, drone, cameraView, cameraViewWidth, cameraViewHeight, droneStates);
-                                            }
-                                        });
-                                        threadFollow.start();
-                                        Toast.makeText(activity, "ok", Toast.LENGTH_SHORT).show();
                                         while (droneStates.getAltitudeFromGPS() < FIRST_ALTITUDE - ALTITUDE_MARGIN || droneStates.getAltitudeFromGPS() > FIRST_ALTITUDE + ALTITUDE_MARGIN) {
-//                                        changeAltitude(FIRST_ALTITUDE);
-                                            Thread.sleep(WAIT_100MS);
-                                        }
-                                        threadFollow.interrupt();
-
-                                        camera.takePicture(activity);
-
-                                        Thread.sleep(WAIT_2000MS);
-
-                                        Thread threadFollow2 = new Thread(new Runnable() {
-                                            public void run() {
-                                                cameraZone.setAltitude(SECOND_ALTITUDE);
-                                                cameraZone.resume(activity, drone, cameraView, cameraViewWidth, cameraViewHeight, droneStates);
+                                            if(cameraZone.readThread == null) {
+                                                cameraZone.setAltitude(FIRST_ALTITUDE);
+                                                cameraZone.resume(activity, drone, cameraView, cameraViewWidth, cameraViewHeight, droneStates, missionListener);
                                             }
-                                        });
-                                        threadFollow2.start();
 
-                                        while (droneStates.getAltitudeFromGPS() < SECOND_ALTITUDE - ALTITUDE_MARGIN || droneStates.getAltitudeFromGPS() > SECOND_ALTITUDE + ALTITUDE_MARGIN) {
-                                            changeAltitude(SECOND_ALTITUDE);
-                                            Thread.sleep(WAIT_100MS);
+//                                        changeAltitude(FIRST_ALTITUDE);
+                                            Thread.sleep(WAIT_1000MS);
                                         }
+
+                                        if(missionListener != null){
+                                            missionListener.onResultCarCrash(false, "Follow mode killed", 0, null);
+                                        }
+
+                                        cameraZone.readThread.kill();
+
+                                        camera.takePicture(activity);
+
+                                        Thread.sleep(WAIT_2000MS);
+                                        if(missionListener != null){
+                                            missionListener.onResultCarCrash(false, "Go to altitude 2", 0, null);
+                                        }
+                                        while (droneStates.getAltitudeFromGPS() < SECOND_ALTITUDE - ALTITUDE_MARGIN || droneStates.getAltitudeFromGPS() > SECOND_ALTITUDE + ALTITUDE_MARGIN) {
+//                                            changeAltitude(SECOND_ALTITUDE);
+                                            if(cameraZone.readThread == null) {
+                                                if(missionListener != null){
+                                                    missionListener.onResultCarCrash(false, "Launch Follow mode", 0, null);
+                                                }
+                                                cameraZone.setAltitude(SECOND_ALTITUDE);
+                                                cameraZone.resume(activity, drone, cameraView, cameraViewWidth, cameraViewHeight, droneStates, missionListener);
+                                            }
+                                            Thread.sleep(WAIT_1000MS);
+                                        }
+
+                                        if(missionListener != null){
+                                            missionListener.onResultCarCrash(false, "Altitude 2 reached", 0, null);
+                                        }
+                                        cameraZone.readThread.kill();
 
                                         camera.takePicture(activity);
 
                                         Thread.sleep(WAIT_2000MS);
 
-
-                                        // TODO : remove the comment
-//                                    land();
-
-                                        while (droneStates.isFlying()) {
-                                            Thread.sleep(WAIT_100MS);
-                                        }
-                                        camera.getTwoLastPictures(activity, missionListener, Drone.this);
 
                                         try {
                                             drone.getFlightController().setVirtualStickModeEnabled(false, new CommonCallbacks.CompletionCallback() {
@@ -591,6 +584,16 @@ public class Drone {
                                         } catch (Exception e) {
                                             Log.e(TAG, e.getMessage());
                                         }
+
+                                        // TODO : remove the comment
+//                                    land();
+
+                                        while (droneStates.isFlying()) {
+                                            Thread.sleep(WAIT_100MS);
+                                        }
+                                        camera.getTwoLastPictures(activity, missionListener, Drone.this);
+
+
 
 
                                     } catch (Exception e) {
@@ -608,7 +611,8 @@ public class Drone {
                             }
                         }
 //                    carCrash();
-                    } else {
+                    }
+                    else {
                         isAuthorized = false;
                         if (missionListener != null) {
                             missionListener.onResultCarCrash(false, "Cannot set mission car crash", 0, null);
@@ -616,17 +620,23 @@ public class Drone {
                     }
                     break;
                 case FOLLOW:
-                    if (currentMission != Mission.LAND) {
+                    if (currentMission != Mission.LAND && currentMission != Mission.CAR_CRASH) {
                         currentMission = mission;
-                        Toast.makeText(activity, "Follow :" + cameraViewWidth + " Height :" + cameraViewHeight, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(activity, "Follow", Toast.LENGTH_SHORT).show();
 
                         threadMission = new Thread(new Runnable() {
                             public void run() {
-                                cameraZone.resume(activity, drone, cameraView, cameraViewWidth, cameraViewHeight, droneStates);
+                                cameraZone.resume(activity, drone, cameraView, cameraViewWidth, cameraViewHeight, droneStates, missionListener);
                             }
                         });
                         threadMission.start();
                         isAuthorized = true;
+                    }
+                    else {
+                        isAuthorized = false;
+                        if (missionListener != null) {
+                            missionListener.onResultFollow(false, "Cannot set mission Follow");
+                        }
                     }
                     break;
             }
@@ -674,12 +684,16 @@ public class Drone {
             Log.e(TAG, e.getMessage());
         }
 
-        if(threadMission != null){
+        if (threadMission != null) {
             threadMission.interrupt();
         }
+
+        if(cameraZone.readThread != null){
+            cameraZone.readThread.kill();
+        }
+
+        camera.killThreadDownload();
     }
-
-
 
 
     /**
@@ -809,7 +823,7 @@ public class Drone {
                     && VideoFeeder.getInstance().getVideoFeeds().size() > 0) {
                 VideoFeeder.getInstance().getVideoFeeds().get(0).setCallback(mReceivedVideoDataCallBack);
 //                if (mReceivedVideoDataCallBack != null) {
-                    Toast.makeText(activity, "live camera ON", Toast.LENGTH_SHORT).show();
+                Toast.makeText(activity, "live camera ON", Toast.LENGTH_SHORT).show();
 //
 //                    VideoFeeder.getInstance().getVideoFeeds().get(0).setCallback(mReceivedVideoDataCallBack);
 //                } else {
@@ -824,6 +838,7 @@ public class Drone {
     }
 
     public void unInitLiveView() {
+        isReady = false;
         if (drone != null) {
             if (drone.getCamera() != null) {
                 // Reset the callback
@@ -884,19 +899,20 @@ public class Drone {
             Log.e(TAG, e.getMessage());
         }
 
-        if(threadMission != null){
+        if (threadMission != null) {
             threadMission.interrupt();
         }
+        if(cameraZone.readThread != null){
+            cameraZone.readThread.kill();
+        }
     }
-
-
 
 
     private void enableVirtualStick() {
         try {
             //preparations in order to get the Virtual Stick Mode available
 //            if(drone.getFlightController().isVirtualStickControlModeAvailable()) {
-                drone.getFlightController().setVirtualStickModeEnabled(true, null);
+            drone.getFlightController().setVirtualStickModeEnabled(true, null);
 //                drone.getFlightController().setVirtualStickModeEnabled(true, new CommonCallbacks.CompletionCallback() {
 //                    @Override
 //                    public void onResult(DJIError djiError) {
@@ -908,40 +924,34 @@ public class Drone {
 //                    }
 //                });
 
-                drone.getFlightController().setFlightOrientationMode(FlightOrientationMode.AIRCRAFT_HEADING, null);
-                drone.getFlightController().setTerrainFollowModeEnabled(false, null);
-                drone.getFlightController().setTripodModeEnabled(false, null);
+            drone.getFlightController().setFlightOrientationMode(FlightOrientationMode.AIRCRAFT_HEADING, null);
+            drone.getFlightController().setTerrainFollowModeEnabled(false, null);
+            drone.getFlightController().setTripodModeEnabled(false, null);
 
 
-                if (drone.getFlightController().isVirtualStickControlModeAvailable()) {
+//            if (drone.getFlightController().isVirtualStickControlModeAvailable()) {
 
-                    if (!drone.getFlightController().isVirtualStickAdvancedModeEnabled()) {
-                        drone.getFlightController().setVirtualStickAdvancedModeEnabled(true);
-
-
-                    }
-                    //Setting the control modes for Roll, Pitch and Yaw
-                    drone.getFlightController().setRollPitchControlMode(RollPitchControlMode.VELOCITY);
-//                        ((Aircraft) currentDrone).getFlightController().setYawControlMode(YawControlMode.ANGLE);
-                    drone.getFlightController().setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
-//                        ((Aircraft) currentDrone).getFlightController().setVerticalControlMode(VerticalControlMode.POSITION);
-                    drone.getFlightController().setVerticalControlMode(VerticalControlMode.POSITION);
-                    drone.getFlightController().setRollPitchCoordinateSystem(FlightCoordinateSystem.BODY);
-
+                if (!drone.getFlightController().isVirtualStickAdvancedModeEnabled()) {
+                    drone.getFlightController().setVirtualStickAdvancedModeEnabled(true);
                 }
-//            }
-//            else{
-//                throw new Exception("Virtual stick mode not available");
+
+                //Setting the control modes for Roll, Pitch and Yaw
+                drone.getFlightController().setRollPitchControlMode(RollPitchControlMode.VELOCITY);
+                drone.getFlightController().setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
+                drone.getFlightController().setVerticalControlMode(VerticalControlMode.POSITION);
+                drone.getFlightController().setRollPitchCoordinateSystem(FlightCoordinateSystem.BODY);
+
 //            }
         } catch (Exception e) {
             if (missionListener != null) {
                 missionListener.onResultCarCrash(false, e.getMessage(), 0, null);
-            }        }
+            }
+        }
     }
 
     private void changeAltitude(final float altitude) {
 //        if(!drone.getFlightController().isVirtualStickAdvancedModeEnabled()) {
-            enableVirtualStick();
+        enableVirtualStick();
 //        }
         try {
             FlightControlData move = new FlightControlData(0, 0, 0, altitude);
@@ -949,15 +959,15 @@ public class Drone {
                 @Override
                 public void onResult(DJIError djiError) {
                     if (djiError != null) {
-                            if (missionListener != null) {
-                                missionListener.onResultCarCrash(false, djiError.getDescription(), 0, null);
-                            }
+                        if (missionListener != null) {
+                            missionListener.onResultCarCrash(false, djiError.getDescription(), 0, null);
+                        }
                     }
                 }
             });
         } catch (Exception e) {
             if (missionListener != null) {
-                missionListener.onResultCarCrash(false,  e.getMessage(), 0, null);
+                missionListener.onResultCarCrash(false, e.getMessage(), 0, null);
             }
         }
     }

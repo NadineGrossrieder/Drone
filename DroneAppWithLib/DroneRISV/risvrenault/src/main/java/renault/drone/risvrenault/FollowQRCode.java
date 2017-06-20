@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.os.Handler;
 import android.support.annotation.Nullable;
@@ -31,7 +32,6 @@ import dji.common.flightcontroller.virtualstick.VerticalControlMode;
 import dji.common.flightcontroller.virtualstick.YawControlMode;
 import dji.common.util.CommonCallbacks;
 import dji.sdk.products.Aircraft;
-import dji.sdk.sdkmanager.DJISDKManager;
 
 /**
  * Created by Nadine Grossrieder on 23.05.2017.
@@ -62,11 +62,15 @@ public class FollowQRCode extends View {
     private int viewWidth;
     private int viewHeight;
     private DroneStates droneStates;
+    private MissionListener missionListener;
+
 
     public readQrCode readThread;
 
     private float speed;
     public char[] state;
+
+    private boolean needToResetRect = false;
 
 
     public FollowQRCode(Context context) {
@@ -97,13 +101,14 @@ public class FollowQRCode extends View {
     }
 
 
-    void resume(Context context, Aircraft drone, TextureView cameraView, int viewWidth, int viewHeight, DroneStates droneStates) {
+    void resume(Context context, Aircraft drone, TextureView cameraView, int viewWidth, int viewHeight, DroneStates droneStates, MissionListener missionListener) {
         this.context = context;
         this.drone = drone;
         this.cameraView = cameraView;
         this.viewWidth = viewWidth;
         this.viewHeight = viewHeight;
         this.droneStates = droneStates;
+        this.missionListener = missionListener;
 
         detector = new BarcodeDetector.Builder(context).setBarcodeFormats(Barcode.QR_CODE).build();
 
@@ -157,30 +162,25 @@ public class FollowQRCode extends View {
         void kill() {
             killed = true;
             state += "Thread killed\n\r";
+            if(missionListener != null){
+                missionListener.onResultFollow(false, "Follow mode killed");
+            }
+            needToResetRect = true;
+            readThread = null;
         }
 
         @Override
         public void run() {
-//            scanningQRCodeState += "Run thread\n\r";
-
-            runOnUiThread(new Runnable() {
-                public void run() {
-                    Toast.makeText(context, "Run thread", Toast.LENGTH_LONG).show();
-                }
-            });
+            if(missionListener != null){
+                missionListener.onResultFollow(false, "Follow mode started");
+            }
             Log.d(TAG, "Thread started");
             state = "run thread";
 
             currentAltitudeSinceStart = droneStates.getAltitudeFromGPS();
 
             while (!killed) {
-                state = "not killed";
-                state = "width : " + viewWidth;
-                state += " height : " + viewHeight;
-
                 if (viewWidth > 0 && viewHeight > 0) {
-                    state = "view width " +viewWidth+ " and height " +viewHeight+ "not null";
-
 
 //
 //                    if (isFirstLoop) {
@@ -266,6 +266,9 @@ public class FollowQRCode extends View {
 
                                 if (barcodes.size() > 0) {
                                     Log.d(TAG, "QR Code detected");
+//                                    if(missionListener != null){
+//                                        missionListener.onResultFollow(false, "QRCodeDetected");
+//                                    }
 //                                    scanningQRCodeState += barcodes.valueAt(0).displayValue + "\n\r";
 
                                     Rect qrRect = barcodes.valueAt(0).getBoundingBox();
@@ -374,18 +377,21 @@ public class FollowQRCode extends View {
          * @param qrPoints the coordinates of the QR rectangle
          */
         private void adjustMovements(Point[] qrPoints) {
+//            if(missionListener != null){
+//                missionListener.onResultFollow(false, "Adjust position");
+//            }
 //            if (currentAltitude == 0) {
 //                currentAltitude = droneStates.getAltitudeFromGPS();
 //            }
 
             try {
-                if (droneStates.getAltitudeFromGPS() > MIN_ALTITUDE || droneStates.getAltitudeFromSensor() > MIN_ALTITUDE) {
+                if (droneStates.getAltitudeFromSensor() > MIN_ALTITUDE || droneStates.getAltitudeFromGPS() > MIN_ALTITUDE) {
+
                     //preparations in order to get the Virtual Stick Mode available
                     drone.getFlightController().setVirtualStickModeEnabled(true, null);
                     drone.getFlightController().setFlightOrientationMode(FlightOrientationMode.AIRCRAFT_HEADING, null);
                     drone.getFlightController().setTerrainFollowModeEnabled(false, null);
                     drone.getFlightController().setTripodModeEnabled(false, null);
-                    Log.d(TAG, "something running: " + DJISDKManager.getInstance().getMissionControl().getRunningElement());
 
                     if (drone.getFlightController().isVirtualStickControlModeAvailable()) {
                         Log.d(TAG, "virtual stick control mode available");
@@ -401,8 +407,8 @@ public class FollowQRCode extends View {
 
                         if(altitudeToGo != null){
                             drone.getFlightController().setVerticalControlMode(VerticalControlMode.POSITION);
-                        }
-                        else {
+
+                        }else{
                             drone.getFlightController().setVerticalControlMode(VerticalControlMode.VELOCITY);
                         }
                         drone.getFlightController().setRollPitchCoordinateSystem(FlightCoordinateSystem.BODY);
@@ -462,6 +468,7 @@ public class FollowQRCode extends View {
 //                            move.setVerticalThrottle(currentAltitude - 0.5f);
 //                        }
                         move.setVerticalThrottle(-0.3f);
+
 //                        scanningQRCodeState += "Decrease altitude\n\r";
 
                     }
@@ -500,17 +507,19 @@ public class FollowQRCode extends View {
                     if (qrMassPoint.x > targetRect.right) {
                         //move drone forward
                         move.setRoll(speed);
-                        state += "Move forward\n\r";
+
 
                         // Check if must move to the right or left without using yaw
                         if (qrMassPoint.y > targetRect.bottom) {
                             //move drone to right
                             move.setPitch(speed);
                             state += "Move to Right\n\r";
+
                         } else if (qrMassPoint.y < targetRect.top) {
                             //move drone to left
                             move.setPitch(-speed);
                             state += "Move to Left\n\r";
+
                         }
                     } else {
                         if (qrMassPoint.x < targetRect.left) {
@@ -529,6 +538,7 @@ public class FollowQRCode extends View {
 
                             state += "Turn back\n\r";
 
+
                             // Check if must go left or right without using yaw
 //                            if (qrMassPoint.y > targetRect.bottom) {
 //                                //move drone to left
@@ -545,6 +555,7 @@ public class FollowQRCode extends View {
                             // Move forward
                             move.setRoll(speed);
                             state += "Turn to Right\n\r";
+
                         } else if (qrMassPoint.y < targetRect.top) {
                             //move drone to left
                             move.setYaw(computeAngle(qrMassPoint, true, 0));
@@ -552,6 +563,7 @@ public class FollowQRCode extends View {
                             // Move forward
                             move.setRoll(speed);
                             state += "Turn to Left\n\r";
+
                         }
                     }
 
@@ -588,6 +600,9 @@ public class FollowQRCode extends View {
                         public void onResult(DJIError djiError) {
                             if (djiError != null) {
 //                                scanningQRCodeState += "Send move : " + djiError.getDescription() + "\n\r";
+                                if(missionListener != null){
+                                    missionListener.onResultFollow(false, djiError.getDescription());
+                                }
                             }
                         }
                     });
@@ -597,6 +612,9 @@ public class FollowQRCode extends View {
 //                }
                 else {
                     state += "Must flight higher\n\r";
+                    if(missionListener != null){
+                        missionListener.onResultFollow(false, "Must flight higher");
+                    }
                 }
             } catch (Exception e) {
 //                scanningQRCodeState += e.getMessage() + "\n\r";
@@ -651,18 +669,21 @@ public class FollowQRCode extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         synchronized (lock) {
-
-//            Toast.makeText(context, "draw", Toast.LENGTH_LONG).show();
-
             if (facesArray != null && facesArray.length > 0) {
                 for (Rect target : facesArray) {
-                    if (target == targetRect) {
-                        paint.setColor(Color.GREEN);
-                    } else {
-                        paint.setColor(Color.RED);
+                    if(needToResetRect) {
+                        paint.setColor(Color.TRANSPARENT);
+                    }
+                    else {
+                        if (target == targetRect) {
+                            paint.setColor(Color.GREEN);
+                        } else {
+                            paint.setColor(Color.RED);
+                        }
                     }
                     canvas.drawRect(target, paint);
                 }
+                needToResetRect = false;
             }
         }
 

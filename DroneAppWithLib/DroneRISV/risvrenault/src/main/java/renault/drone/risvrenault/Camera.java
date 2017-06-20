@@ -56,6 +56,8 @@ public class Camera {
     private String filename1;
     private String filename2;
 
+    private Thread threadDownload;
+
 
     Camera(Aircraft drone) {
         this.drone = drone;
@@ -163,9 +165,15 @@ public class Camera {
 
     }
 
+    void killThreadDownload(){
+        if(threadDownload != null) {
+            threadDownload.interrupt();
+        }
+    }
+
     void getTwoLastPictures(final Context activity, final MissionListener missionListener, final Drone droneContext) {
         try {
-            Thread th = new Thread(new Runnable() {
+            threadDownload = new Thread(new Runnable() {
                 public void run() {
                     try {
                         Thread.sleep(1000);
@@ -337,7 +345,7 @@ public class Camera {
                     }
                 }
             });
-            th.start();
+            threadDownload.start();
         } catch (Exception e) {
             Toast.makeText(activity, "retrieve picture : " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }

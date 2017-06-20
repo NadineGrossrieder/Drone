@@ -113,8 +113,14 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
 
         MissionListener missionListener = new MissionListener() {
             @Override
-            public void onResultFollow(Boolean isSuccess) {
-
+            public void onResultFollow(Boolean isSuccess, final String message) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        downloadPercent.setVisibility(View.GONE);
+                        showToast(message);
+                    }
+                });
             }
 
             @Override
@@ -151,12 +157,12 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
             }
 
             @Override
-            public void onResultLand(Boolean isSuccess, String error) {
+            public void onResultLand(Boolean isSuccess, String message) {
 
             }
 
             @Override
-            public void onResultLaunch(Boolean isSuccess, String error) {
+            public void onResultLaunch(Boolean isSuccess, String message) {
 
             }
         };
@@ -219,7 +225,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
         btnCarCrash = (Button) findViewById(R.id.btn_car_crash);
         mStopBtn = (Button) findViewById(R.id.btn_stop);
         btnFollowMode = (Button) findViewById(R.id.btn_follow_mode);
-//        btnLandMode = (Button) findViewById(R.id.btn_land_mode);
 
         satellite = (TextView) findViewById(R.id.satellite);
         signalGPS = (TextView) findViewById(R.id.signalGPS);
@@ -231,7 +236,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
         btnLand.setOnClickListener(this);
         btnCarCrash.setOnClickListener(this);
         btnFollowMode.setOnClickListener(this);
-//        btnLandMode.setOnClickListener(this);
 
 
     }
