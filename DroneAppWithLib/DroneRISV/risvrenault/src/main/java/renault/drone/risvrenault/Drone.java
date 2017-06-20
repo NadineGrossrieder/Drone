@@ -540,7 +540,7 @@ public class Drone {
                                             }
                                         });
                                         threadFollow.start();
-
+                                        Toast.makeText(activity, "ok", Toast.LENGTH_SHORT).show();
                                         while (droneStates.getAltitudeFromGPS() < FIRST_ALTITUDE - ALTITUDE_MARGIN || droneStates.getAltitudeFromGPS() > FIRST_ALTITUDE + ALTITUDE_MARGIN) {
 //                                        changeAltitude(FIRST_ALTITUDE);
                                             Thread.sleep(WAIT_100MS);

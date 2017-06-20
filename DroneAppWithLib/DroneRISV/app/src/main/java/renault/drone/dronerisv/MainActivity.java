@@ -288,8 +288,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                                             runOnUiThread(new Runnable() {
                                                 @Override
                                                 public void run() {
-                                                    isFirst = !(drone.init(getApplicationContext(), mVideoSurface, cameraZone, null, sWidth, sHeight));
-//                                                    isFirst = !(drone.init(getApplicationContext(), mVideoSurface, cameraZone, drone.getDrone(), sWidth, sHeight));
+                                                    isFirst = !(drone.init(getApplicationContext(), mVideoSurface, cameraZone, drone.getDrone(), sWidth, sHeight));
 //                                                    mVideoSurface.setSurfaceTextureListener(MainActivity.this);
 //
 //                                                    drone.initLiveView();
