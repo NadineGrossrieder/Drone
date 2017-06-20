@@ -282,14 +282,14 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                         public void run() {
                             try {
                                 if (drone.isConnected()) {
-                                    velocityY.setText(isFirst + "");
                                     if (isFirst) {
                                         try {
 //                                            isFirst = false;
                                             runOnUiThread(new Runnable() {
                                                 @Override
                                                 public void run() {
-                                                    isFirst = !(drone.init(getApplicationContext(), mVideoSurface, cameraZone, drone.getDrone(), sWidth, sHeight));
+                                                    isFirst = !(drone.init(getApplicationContext(), mVideoSurface, cameraZone, null, sWidth, sHeight));
+//                                                    isFirst = !(drone.init(getApplicationContext(), mVideoSurface, cameraZone, drone.getDrone(), sWidth, sHeight));
 //                                                    mVideoSurface.setSurfaceTextureListener(MainActivity.this);
 //
 //                                                    drone.initLiveView();
