@@ -3,12 +3,10 @@ package renault.drone.dronerisv;
 import android.Manifest;
 import android.app.Activity;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.SurfaceTexture;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
+import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -19,7 +17,6 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import renault.drone.risvrenault.Drone;
 import renault.drone.risvrenault.FollowQRCode;
@@ -30,7 +27,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
     private static final String TAG = MainActivity.class.getName();
     private long SPEED_REFRESH = 500;
 
-    private long speedRefresh = 5000;
+    private long speedRefresh = 1000;
 
 
     protected TextureView mVideoSurface = null;
@@ -51,7 +48,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
     private Button btnLand;
     private Button btnCarCrash;
     private Button btnFollowMode;
-//    private Button btnLandMode;
 
 
     private TextView satellite;
@@ -69,6 +65,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
     private TextView flightTime;
 
     private ImageView photo;
+    private Thread displayThread;
+    private TextView logTxt;
 
 
     @Override
@@ -118,9 +116,9 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                     @Override
                     public void run() {
                         downloadPercent.setVisibility(View.GONE);
-                        showToast(message);
                     }
                 });
+                showLog(message);
             }
 
             @Override
@@ -139,9 +137,9 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                         @Override
                         public void run() {
                             downloadPercent.setVisibility(View.GONE);
-                            showToast(message);
                         }
                     });
+                    showLog(message);
                 }
 
                 if (photos != null && photos[0] != null && photos[1] != null) {
@@ -158,26 +156,33 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
 
             @Override
             public void onResultLand(Boolean isSuccess, String message) {
-
+                showLog(message);
             }
 
             @Override
             public void onResultLaunch(Boolean isSuccess, String message) {
+                showLog(message);
+            }
 
+            @Override
+            public void onResultNoMission(Boolean isSuccess, String message) {
+                showLog(message);
             }
         };
 
         drone.callbackRegisterEndMission(missionListener);
-
-//        mVideoSurface.setSurfaceTextureListener(this);
-//        drone.initLiveView();
-
     }
 
     @Override
     public void onPause() {
         Log.e(TAG, "onPause");
         interrupted = true;
+        if (drone != null) {
+            drone.abortMission();
+        }
+        if (displayThread != null) {
+            displayThread.interrupt();
+        }
         super.onPause();
     }
 
@@ -190,7 +195,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
     @Override
     protected void onDestroy() {
         Log.e(TAG, "onDestroy");
-        drone.unInitLiveView();
+        drone.unInitLiveView(this);
         super.onDestroy();
     }
 
@@ -214,6 +219,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
 
         downloadPercent = (TextView) findViewById(R.id.DownloadPercent);
 
+        logTxt = (TextView) findViewById(R.id.logcontent);
+
         velocityX = (TextView) findViewById(R.id.velocityX);
         velocityY = (TextView) findViewById(R.id.velocityY);
         velocityZ = (TextView) findViewById(R.id.velocityZ);
@@ -229,7 +236,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
         satellite = (TextView) findViewById(R.id.satellite);
         signalGPS = (TextView) findViewById(R.id.signalGPS);
         battery = (TextView) findViewById(R.id.batteryLvl);
-//        currentAltitudeSinceStart = (TextView) findViewById(R.id.currentAltitudeSinceStart);
 
         mStopBtn.setOnClickListener(this);
         btnTakeoff.setOnClickListener(this);
@@ -240,10 +246,13 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
 
     }
 
-    public void showToast(final String msg) {
+    public void showLog(final String msg) {
         runOnUiThread(new Runnable() {
+            @Override
             public void run() {
-                Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
+                if(msg != null && !msg.equals("")) {
+                    logTxt.setText(msg);
+                }
             }
         });
     }
@@ -277,39 +286,34 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
     }
 
     private void startDisplayThread() {
-        Thread th = new Thread(new Runnable() {
+        final Handler handler = new Handler();
+
+        displayThread = new Thread(new Runnable() {
             public void run() {
 
                 while (!interrupted) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                if (drone.isConnected()) {
-                                    if (isFirst) {
-                                        try {
-//                                            isFirst = false;
-                                            runOnUiThread(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    isFirst = !(drone.init(getApplicationContext(), mVideoSurface, cameraZone, drone.getDrone(), sWidth, sHeight));
-//                                                    mVideoSurface.setSurfaceTextureListener(MainActivity.this);
-//
-//                                                    drone.initLiveView();
 
-                                                }
-                                            });
-                                            speedRefresh = SPEED_REFRESH;
-                                        } catch (Exception e) {
-                                            Log.e(TAG, e.getMessage());
-                                            velocityX.setText(e.getMessage());
+                    try {
+                        if (drone.isConnected()) {
+                            if (isFirst) {
+                                try {
+                                    isFirst = !(drone.init(getApplicationContext(), mVideoSurface, cameraZone, drone.getDrone(), sWidth, sHeight));
+//                                    if(!isFirst){
+//                                        interrupted = true;
+//                                    }
+                                    speedRefresh = SPEED_REFRESH;
+                                } catch (Exception e) {
+                                    showLog("Error when init the drone : "+e.getMessage());
+                                }
+                            }
 
-                                        }
-                                    }
-                                    if (drone.getDroneStates() != null) {
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (drone.getDroneStates() != null && drone.getGPSPositionDrone() != null) {
                                         altitudeTxt.setText("Altitude sensor: " + drone.getDroneStates().getAltitudeFromSensor() + "m / GPS : " + drone.getDroneStates().getAltitudeFromGPS() + "m");
                                         gpsTxt.setText(drone.getGPSPositionDrone().getLatitude() + " " + drone.getGPSPositionDrone().getLongitude());
-                                        if(drone.getGPSPositionRC() != null) {
+                                        if (drone.getGPSPositionRC() != null) {
                                             phoneGPSText.setText(drone.getGPSPositionRC().getLatitude() + " " + drone.getGPSPositionRC().getLongitude());
                                         }
                                         isFlyingTxt.setText(String.valueOf(drone.getDroneStates().isFlying()));
@@ -351,23 +355,75 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                                         phoneGPSText.setText("Drone state is null");
                                     }
                                 }
-                            } catch (Exception e) {
-                                Log.e(TAG, e.getMessage());
-                                showToast(e.getMessage());
-                            }
-                        }
-                    });
-
-                    try {
-                        Thread.sleep(speedRefresh);
-                    } catch (InterruptedException e) {
-                        Log.e(TAG, e.getMessage());
+                            });
+//                            runOnUiThread(new Runnable() {
+//                                @Override
+//                                public void run() {
+//
+//                                    if (drone.getDroneStates() != null && drone.getGPSPositionDrone() != null) {
+//                                        altitudeTxt.setText("Altitude sensor: " + drone.getDroneStates().getAltitudeFromSensor() + "m / GPS : " + drone.getDroneStates().getAltitudeFromGPS() + "m");
+//                                        gpsTxt.setText(drone.getGPSPositionDrone().getLatitude() + " " + drone.getGPSPositionDrone().getLongitude());
+//                                        if (drone.getGPSPositionRC() != null) {
+//                                            phoneGPSText.setText(drone.getGPSPositionRC().getLatitude() + " " + drone.getGPSPositionRC().getLongitude());
+//                                        }
+//                                        isFlyingTxt.setText(String.valueOf(drone.getDroneStates().isFlying()));
+//
+//                                        velocityX.setText(String.valueOf(drone.getDroneStates().getVelocityX()));
+//                                        velocityY.setText(String.valueOf(drone.getDroneStates().getVelocityY()));
+//                                        velocityZ.setText(String.valueOf(drone.getDroneStates().getVelocityZ()));
+//
+//                                        int m = 0;
+//                                        int s = drone.getDroneStates().getTotalFlightTime();
+//
+//                                        while (s >= 60) {
+//                                            if (s >= 60) {
+//                                                m += 1;
+//                                                s = s - 60;
+//                                            }
+//                                        }
+////                                        flightTime.setText(String.valueOf(drone.getDroneStates().getTotalFlightTime()));
+//                                        flightTime.setText(m + ":" + s);
+//
+//                                        signalGPS.setText("Signal GPS : " + String.valueOf(drone.getDroneStates().getGPSSignal()));
+//                                        satellite.setText("Satellite : " + (drone.getDroneStates().getNbSatellite()));
+//                                        battery.setText(drone.getBatteryLevel() + "%");
+//
+//                                        if (drone.getDroneStates().isFlying()) {
+//                                            btnTakeoff.setVisibility(View.GONE);
+//                                            btnLand.setVisibility(View.VISIBLE);
+//                                        } else {
+//                                            btnTakeoff.setVisibility(View.VISIBLE);
+//                                            btnLand.setVisibility(View.GONE);
+//                                        }
+//
+//                                        if (mStopBtn.getText().equals("Start")) {
+//                                            mStopBtn.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.colorGreen));
+//                                        } else {
+//                                            mStopBtn.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.colorRed));
+//                                        }
+//                                    } else {
+//                                        phoneGPSText.setText("Drone state is null");
+//                                    }
+//
+//
+//
+//                            }
+//                        });
                     }
+                } catch(Exception e){
+                    showLog("Error when displaying drone state : "+e.getMessage());
+                }
+
+                try {
+                    Thread.sleep(speedRefresh);
+                } catch (InterruptedException e) {
+                    showLog(e.getMessage());
                 }
             }
-        });
-        th.start();
-    }
+        }
+    });
+        displayThread.start();
+}
 
 
     @Override

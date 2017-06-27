@@ -34,4 +34,5 @@
     <string name="percent">0%</string>
     <string name="drone_position">Drone Position</string>
     <string name="phone_position">Phone Position</string>
+    <string name="Log">Log</string>
 </resources>

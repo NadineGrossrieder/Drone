@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Environment;
 import android.support.annotation.NonNull;
-import android.widget.Toast;
 
 import java.io.File;
 import java.util.List;
@@ -16,6 +15,9 @@ import dji.common.camera.WhiteBalance;
 import dji.common.error.DJIError;
 import dji.common.gimbal.GimbalMode;
 import dji.common.gimbal.GimbalState;
+import dji.common.gimbal.Rotation;
+import dji.common.gimbal.RotationMode;
+import dji.common.product.Model;
 import dji.common.util.CommonCallbacks;
 import dji.sdk.camera.MediaFile;
 import dji.sdk.camera.MediaManager;
@@ -57,6 +59,7 @@ public class Camera {
     private String filename2;
 
     private Thread threadDownload;
+    private boolean isKilled = false;
 
 
     Camera(Aircraft drone) {
@@ -136,42 +139,48 @@ public class Camera {
     /**
      * Take an picture with the drone's camera
      **/
-    void takePicture(final Context activity) {
+    void takePicture(final MissionListener missionListener, final Context activity) {
         //TODO handle state
         drone.getCamera().setMode(SettingsDefinitions.CameraMode.SHOOT_PHOTO, new CommonCallbacks.CompletionCallback() {
             @Override
             public void onResult(DJIError djiError) {
                 if (djiError != null) {
-                    Toast.makeText(activity, djiError.getDescription(), Toast.LENGTH_SHORT).show();
+                    if (missionListener != null) {
+                        missionListener.onResultCarCrash(false, "Error when set mode photo : "+djiError.getDescription(), 0, null);
+                    }
 
                 } else {
                     drone.getCamera().startShootPhoto(new CommonCallbacks.CompletionCallback() {
                         @Override
                         public void onResult(DJIError djiError) {
                             if (djiError != null) {
-                                Toast.makeText(activity, djiError.getDescription(), Toast.LENGTH_SHORT).show();
-
+                                if (missionListener != null) {
+                                    missionListener.onResultCarCrash(false, "Error when take picture : "+djiError.getDescription(), 0, null);
+                                }
                             } else {
-
-                                Toast.makeText(activity, "Picture taken", Toast.LENGTH_SHORT).show();
+                                if (missionListener != null) {
+                                    missionListener.onResultCarCrash(false, "Picture taken", 0, null);
+                                }
                             }
                         }
                     });
                 }
             }
         });
-
-        // TODO handle error
-
     }
 
-    void killThreadDownload(){
-        if(threadDownload != null) {
+    void killThreadDownload() {
+        if (drone != null && drone.getCamera() != null && drone.getCamera().getMediaManager() != null) {
+            drone.getCamera().getMediaManager().exitMediaDownloading();
+        }
+        if (threadDownload != null) {
             threadDownload.interrupt();
         }
+        isKilled = true;
     }
 
-    void getTwoLastPictures(final Context activity, final MissionListener missionListener, final Drone droneContext) {
+    void getTwoLastPictures(final MissionListener missionListener, final Drone droneContext) {
+        isKilled = false;
         try {
             threadDownload = new Thread(new Runnable() {
                 public void run() {
@@ -182,15 +191,19 @@ public class Camera {
                     }
 
                     if (!drone.getCamera().isMediaDownloadModeSupported()) {
-                        Toast.makeText(activity, "Not supported", Toast.LENGTH_SHORT).show();
+                        missionListener.onResultCarCrash(false, "Not supported", 0, null);
+
                     } else {
 
                         final DownloadListener downloadListener = new DownloadListener() {
                             @Override
                             public void onFinish() {
                                 bitmapArray = new Bitmap[]{bitmap1, bitmap2};
-                                missionListener.onResultCarCrash(false, "Medias downloaded with success", 0, bitmapArray);
+                                if (missionListener != null) {
+                                    missionListener.onResultCarCrash(true, "Medias downloaded with success", 0, bitmapArray);
+                                }
                                 droneContext.finishMission();
+                                threadDownload.interrupt();
                             }
                         };
 
@@ -221,8 +234,8 @@ public class Camera {
                                                     try {
                                                         if (djiMedias != null && !djiMedias.isEmpty()) {
 
-                                                            media1 = djiMedias.get(djiMedias.size()-1);
-                                                            media2 = djiMedias.get(djiMedias.size()-2);
+                                                            media1 = djiMedias.get(djiMedias.size() - 1);
+                                                            media2 = djiMedias.get(djiMedias.size() - 2);
 
                                                             MediaManager.DownloadListener<String> completion = new MediaManager.DownloadListener<String>() {
                                                                 @Override
@@ -231,9 +244,9 @@ public class Camera {
 
                                                                 @Override
                                                                 public void onRateUpdate(long total, long current, long persize) {
-                                                                    if(missionListener != null) {
-                                                                        float currentPercent = ((float)current / (float) total)*100;
-                                                                        missionListener.onResultCarCrash(true, "File " + currentDownloadMedia +  "/2 downloaded at ", currentPercent,  null);
+                                                                    if (missionListener != null) {
+                                                                        float currentPercent = ((float) current / (float) total) * 100;
+                                                                        missionListener.onResultCarCrash(true, "File " + currentDownloadMedia + "/2 downloaded at ", currentPercent, null);
 
                                                                     }
                                                                 }
@@ -245,22 +258,21 @@ public class Camera {
 
                                                                 @Override
                                                                 public void onSuccess(String s) {
-                                                                    if(missionListener != null) {
+                                                                    if (missionListener != null) {
                                                                         BitmapFactory.Options options = new BitmapFactory.Options();
                                                                         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
 
-                                                                        missionListener.onResultCarCrash(true,"File download in : " + s, 0, null);
-                                                                        if(currentDownloadMedia == 2){
+                                                                        missionListener.onResultCarCrash(true, "File download in : " + s, 0, null);
+                                                                        if (currentDownloadMedia == 2) {
                                                                             currentDownloadMedia = 0;
 
                                                                             bitmap2 = BitmapFactory.decodeFile(filePath.getAbsolutePath() + "/" + filename2 + ".jpeg", options);
-                                                                            missionListener.onResultCarCrash(true,"Download Finished : " + s, 0, null);
+                                                                            missionListener.onResultCarCrash(true, "Download Finished : " + s, 0, null);
 
                                                                             downloadListener.onFinish();
-                                                                        }
-                                                                        else if(currentDownloadMedia == 1 ){
+                                                                        } else if (currentDownloadMedia == 1) {
                                                                             currentDownloadMedia = 2;
-                                                                            bitmap1 = BitmapFactory.decodeFile(filePath.getAbsolutePath() + "/" + filename1 +".jpeg", options);
+                                                                            bitmap1 = BitmapFactory.decodeFile(filePath.getAbsolutePath() + "/" + filename1 + ".jpeg", options);
                                                                         }
                                                                     }
                                                                 }
@@ -268,13 +280,14 @@ public class Camera {
                                                                 @Override
                                                                 public void onFailure(DJIError djiError) {
                                                                     if (djiError != null) {
-                                                                        if(missionListener != null) {
-                                                                            missionListener.onResultCarCrash(true, "Fetch media data fail : " + djiError, 0, null);
+                                                                        if (missionListener != null) {
+                                                                            missionListener.onResultCarCrash(false, djiError.getDescription(), 0, null);
                                                                         }
 
-                                                                        if(retry <=1) {
+                                                                        if (retry <= 1 && !isKilled) {
                                                                             retry++;
-                                                                            getTwoLastPictures(activity, missionListener, droneContext);
+                                                                            threadDownload.interrupt();
+                                                                            getTwoLastPictures(missionListener, droneContext);
                                                                         }
                                                                     }
 
@@ -282,11 +295,10 @@ public class Camera {
                                                             };
 
                                                             if (media1 == null || media2 == null) {
-                                                                if(missionListener != null) {
+                                                                if (missionListener != null) {
                                                                     missionListener.onResultCarCrash(false, "Media is null", 0, null);
                                                                 }
-                                                            }
-                                                            else {
+                                                            } else {
 
                                                                 if (mediaManager == null) {
                                                                     mediaManager = drone.getCamera().getMediaManager();
@@ -302,12 +314,12 @@ public class Camera {
                                                                 mediaManager.fetchMediaData(media2, filePath, filename2, completion);
                                                             }
                                                         } else {
-                                                            if(missionListener != null) {
-                                                                missionListener.onResultCarCrash(false,  "No Media in SD Card", 0, null);
+                                                            if (missionListener != null) {
+                                                                missionListener.onResultCarCrash(false, "No Media in SD Card", 0, null);
                                                             }
                                                         }
                                                     } catch (Exception e) {
-                                                        if(missionListener != null) {
+                                                        if (missionListener != null) {
                                                             missionListener.onResultCarCrash(false, e.getMessage(), 0, null);
                                                         }
                                                     }
@@ -316,28 +328,30 @@ public class Camera {
                                                 @Override
                                                 public void onFailure(DJIError djiError) {
                                                     if (djiError != null) {
-                                                        if(missionListener != null) {
-                                                            missionListener.onResultCarCrash(false,"Fetch media list fail : " + djiError.getDescription(), 0, null);
+                                                        if (missionListener != null) {
+                                                            missionListener.onResultCarCrash(false, "Fetch media list fail : " + djiError.getDescription(), 0, null);
                                                         }
                                                     }
+                                                    threadDownload.interrupt();
                                                 }
                                             });
                                         } else {
-                                            if(missionListener != null) {
-                                                missionListener.onResultCarCrash(false,"MediaManager is null or Camera is null", 0, null);
+                                            if (missionListener != null) {
+                                                missionListener.onResultCarCrash(false, "MediaManager is null or Camera is null", 0, null);
                                             }
+                                            threadDownload.interrupt();
                                         }
                                     } catch (Exception e) {
-                                        if(missionListener != null) {
+                                        if (missionListener != null) {
                                             missionListener.onResultCarCrash(false, e.getMessage(), 0, null);
                                         }
-                                        Toast.makeText(activity, "Set mode catch error : " + e.getMessage(), Toast.LENGTH_SHORT).show();
-
+                                        threadDownload.interrupt();
                                     }
                                 } else {
-                                    if(missionListener != null) {
+                                    if (missionListener != null) {
                                         missionListener.onResultCarCrash(false, djiError.getDescription(), 0, null);
                                     }
+                                    threadDownload.interrupt();
                                 }
 
                             }
@@ -347,7 +361,11 @@ public class Camera {
             });
             threadDownload.start();
         } catch (Exception e) {
-            Toast.makeText(activity, "retrieve picture : " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            if (missionListener != null) {
+                missionListener.onResultCarCrash(false, "retrieve picture : " + e.getMessage(), 0, null);
+            }
+            threadDownload.interrupt();
+            droneContext.finishMission();
         }
     }
 
@@ -383,13 +401,113 @@ public class Camera {
     }
 
 
+    protected void lookDown(final Drone d, Aircraft drone) {
+        try {
+            //Change Gimbal mode
+            drone.getGimbal().setMode(GimbalMode.YAW_FOLLOW, new CommonCallbacks.CompletionCallback() {
+                @Override
+                public void onResult(DJIError djiError) {
+                    if (djiError != null) {
+                        d.sendMessageBack(false, djiError.getDescription());
+                    } else {
+//                                        sendMessageBack(false, "Camera mode changed with success");
+//                        isFirstLoop = false;
+                    }
+                }
+            });
 
 
-    public interface DownloadListener{
+            if (drone.getModel() == Model.INSPIRE_1) {
+                while (getGimbalOrientation().getPitch() < -90 && getGimbalOrientation().getYaw() < -90) {
 
+                    //Move gimbal to look down
+                    Rotation.Builder rotation = new Rotation.Builder();
+                    rotation.mode(RotationMode.ABSOLUTE_ANGLE);
+                    rotation.pitch(-90.0f);
+                    rotation.yaw(-90.0f);
+                    Rotation r = rotation.build();
+                    drone.getGimbal().rotate(r, new CommonCallbacks.CompletionCallback() {
+                        @Override
+                        public void onResult(DJIError djiError) {
+                            if (djiError != null) {
+                                d.sendMessageBack(false, djiError.getDescription());
+                            } else {
+//                                            sendMessageBack(false, "Gimbal rotate with success");
+//                            isFirstLoop = false;
+                            }
+                        }
+                    });
+
+//                    // Rotate the gimbal to have the front as the right on the phone
+//                    Rotation.Builder rotationYaw = new Rotation.Builder();
+//                    rotationYaw.mode(RotationMode.ABSOLUTE_ANGLE);
+//                    rotation.yaw(-90);
+//                    Rotation r2 = rotation.build();
+//                    drone.getGimbal().rotate(r2, new CommonCallbacks.CompletionCallback() {
+//                        @Override
+//                        public void onResult(DJIError djiError) {
+//                            if (djiError != null) {
+//                                d.sendMessageBack(false, djiError.getDescription());
+//                            } else {
+////                                            sendMessageBack(false, "Gimbal rotate with success");
+////                            isFirstLoop = false;
+//                            }
+//                        }
+//                    });
+                    Thread.sleep(500);
+                }
+            } else if (drone.getModel() == Model.MAVIC_PRO) {
+                while (getGimbalOrientation().getPitch() < -90) {
+                    d.sendMessageBack(false, getGimbalOrientation().getPitch() +"");
+
+                    //Move gimbal to look down
+                    Rotation.Builder rotation = new Rotation.Builder();
+                    rotation.mode(RotationMode.ABSOLUTE_ANGLE);
+                    rotation.pitch(-90.0f);
+                    rotation.yaw(10);
+                    Rotation r = rotation.build();
+                    drone.getGimbal().rotate(r, new CommonCallbacks.CompletionCallback() {
+                        @Override
+                        public void onResult(DJIError djiError) {
+                            if (djiError != null) {
+                                d.sendMessageBack(false, djiError.getDescription());
+                            } else {
+//                                            sendMessageBack(false, "Gimbal rotate with success");
+//                            isFirstLoop = false;
+                            }
+                        }
+                    });
+//
+//                //Move gimbal to look down
+//                Rotation.Builder rotation2 = new Rotation.Builder();
+//                rotation2.mode(RotationMode.ABSOLUTE_ANGLE);
+//                rotation.yaw(10);
+//                Rotation r2 = rotation2.build();
+//                drone.getGimbal().rotate(r2, new CommonCallbacks.CompletionCallback() {
+//                    @Override
+//                    public void onResult(DJIError djiError) {
+//                        if (djiError != null) {
+//                            d.sendMessageBack(false, djiError.getDescription());
+//                        } else {
+////                                            sendMessageBack(false, "Gimbal rotate with success");
+////                            isFirstLoop = false;
+//                        }
+//                    }
+//                });
+                    Thread.sleep(500);
+
+                }
+            }
+
+
+        } catch (Exception e) {
+            d.sendMessageBack(true, e.getMessage());
+        }
+    }
+
+
+    public interface DownloadListener {
         void onFinish();
-
-
     }
 
 }

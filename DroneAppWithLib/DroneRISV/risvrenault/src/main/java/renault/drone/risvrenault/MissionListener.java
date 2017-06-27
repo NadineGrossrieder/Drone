@@ -16,5 +16,7 @@ public interface MissionListener{
 
     void onResultLand(Boolean isSuccess, String message);
 
-    void onResultLaunch(Boolean isSuccess, String message);
+    void onResultLaunch(Boolean isSuccess, String message );
+
+    void onResultNoMission(Boolean isSuccess, String message );
 }

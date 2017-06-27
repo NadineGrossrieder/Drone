@@ -258,6 +258,29 @@
         android:text=""
         android:textColor="#ffffff" />
 
+
+
+
+    <TextView
+        android:id="@+id/Log"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/btn_stop"
+        android:layout_below="@+id/DownloadPercent"
+        android:text="@string/Log"
+        android:textColor="#ffffff" />
+
+    <TextView
+        android:id="@+id/logcontent"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/btn_stop"
+        android:layout_below="@+id/Log"
+        android:layout_marginBottom="15dp"
+        android:text=""
+        android:textColor="#ffffff" />
+
+
     <TextView
         android:id="@+id/velocityXTxt"
         android:layout_width="150dp"
