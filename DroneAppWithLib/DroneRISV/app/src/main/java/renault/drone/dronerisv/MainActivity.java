@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
@@ -25,7 +26,7 @@ import renault.drone.risvrenault.MissionListener;
 public class MainActivity extends Activity implements View.OnClickListener, TextureView.SurfaceTextureListener {
 
     private static final String TAG = MainActivity.class.getName();
-    private long SPEED_REFRESH = 500;
+    private long SPEED_REFRESH = 1000;
 
     private long speedRefresh = 1000;
 
@@ -67,6 +68,10 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
     private ImageView photo;
     private Thread displayThread;
     private TextView logTxt;
+    private TextView distanceText;
+    private TextView missionTxt;
+    private TextView isoTxt;
+    private TextView homeTxt;
 
 
     @Override
@@ -129,7 +134,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                         @Override
                         public void run() {
                             downloadPercent.setVisibility(View.VISIBLE);
-                            downloadPercent.setText(message + percentDownload);
+                            downloadPercent.setText(message + percentDownload + "%");
                         }
                     });
                 } else {
@@ -214,12 +219,18 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
         altitudeTxt = (TextView) findViewById(R.id.altitude);
         gpsTxt = (TextView) findViewById(R.id.positionGPS);
         phoneGPSText = (TextView) findViewById(R.id.phonePositionGPS);
+        distanceText = (TextView) findViewById(R.id.distanceTxt);
+
+        missionTxt = (TextView) findViewById(R.id.missionText);
 
         isFlyingTxt = (TextView) findViewById(R.id.isFlyingBool);
 
         downloadPercent = (TextView) findViewById(R.id.DownloadPercent);
 
+        isoTxt = (TextView) findViewById(R.id.isotxt);
+        homeTxt = (TextView) findViewById(R.id.textHomePosition);
         logTxt = (TextView) findViewById(R.id.logcontent);
+        logTxt.setMovementMethod(new ScrollingMovementMethod());
 
         velocityX = (TextView) findViewById(R.id.velocityX);
         velocityY = (TextView) findViewById(R.id.velocityY);
@@ -316,11 +327,19 @@ public class MainActivity extends Activity implements View.OnClickListener, Text
                                         if (drone.getGPSPositionRC() != null) {
                                             phoneGPSText.setText(drone.getGPSPositionRC().getLatitude() + " " + drone.getGPSPositionRC().getLongitude());
                                         }
-                                        isFlyingTxt.setText(String.valueOf(drone.getDroneStates().isFlying()));
+                                        homeTxt.setText(drone.getDroneStates().getHomeLocation().getLatitude() + " " +  drone.getDroneStates().getHomeLocation().getLongitude());
+
+                                        isFlyingTxt.setText("Is flying: " + String.valueOf(drone.getDroneStates().isFlying()));
 
                                         velocityX.setText(String.valueOf(drone.getDroneStates().getVelocityX()));
                                         velocityY.setText(String.valueOf(drone.getDroneStates().getVelocityY()));
                                         velocityZ.setText(String.valueOf(drone.getDroneStates().getVelocityZ()));
+
+                                        missionTxt.setText(drone.getCurrentMission().name());
+                                        isoTxt.setText("ISO: " + drone.getDroneStates().getIso());
+
+
+                                        distanceText.setText("Distance :" + drone.getDroneStates().getDistanceBetweenDroneAndRC() + "m");
 
                                         int m = 0;
                                         int s = drone.getDroneStates().getTotalFlightTime();

@@ -207,7 +207,7 @@
         android:layout_alignStart="@+id/btn_stop"
         android:layout_below="@+id/textPositionDrone"
         android:layout_marginBottom="15dp"
-        android:text="@string/gps_position"
+        android:text=""
         android:textColor="#ffffff" />
 
     <TextView
@@ -226,35 +226,64 @@
         android:layout_alignStart="@+id/btn_stop"
         android:layout_below="@+id/textPhonePosition"
         android:layout_marginBottom="15dp"
-        android:text="@string/gps_position"
+        android:text=""
         android:textColor="#ffffff" />
 
     <TextView
-        android:id="@+id/isFlying"
+        android:id="@+id/homePositionGPS"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
         android:layout_alignStart="@+id/btn_stop"
         android:layout_below="@+id/phonePositionGPS"
-        android:text="@string/is_flying"
+        android:text="@string/home_position"
         android:textColor="#ffffff" />
+
+    <TextView
+        android:id="@+id/textHomePosition"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/btn_stop"
+        android:layout_below="@+id/homePositionGPS"
+        android:layout_marginBottom="15dp"
+        android:text=""
+        android:textColor="#ffffff" />
+
+    <!--<TextView-->
+        <!--android:id="@+id/isFlying"-->
+        <!--android:layout_width="150dp"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_alignStart="@+id/btn_stop"-->
+        <!--android:layout_below="@+id/homePositionGPS"-->
+        <!--android:text="@string/is_flying"-->
+        <!--android:textColor="#ffffff" />-->
 
     <TextView
         android:id="@+id/isFlyingBool"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
         android:layout_alignStart="@+id/btn_stop"
-        android:layout_below="@+id/isFlying"
-        android:layout_marginBottom="15dp"
-        android:text="@string/false_txt"
+        android:layout_below="@+id/textHomePosition"
+        android:text="Is flying: false"
         android:textColor="#ffffff" />
+
+
+    <TextView
+        android:id="@+id/distanceTxt"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/btn_stop"
+        android:layout_below="@+id/isFlyingBool"
+        android:layout_marginBottom="15dp"
+        android:text="Distance: 0m"
+        android:textColor="#ffffff" />
+
 
     <TextView
         android:id="@+id/DownloadPercent"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
         android:layout_alignStart="@+id/btn_stop"
-        android:layout_below="@+id/isFlyingBool"
-        android:layout_marginBottom="15dp"
+        android:layout_below="@+id/distanceTxt"
         android:text=""
         android:textColor="#ffffff" />
 
@@ -290,6 +319,7 @@
         android:text="@string/pitch"
         android:textColor="#ffffff" />
 
+
     <TextView
         android:id="@+id/velocityX"
         android:layout_width="150dp"
@@ -307,6 +337,7 @@
         android:layout_alignStart="@+id/btn_follow_mode"
         android:layout_below="@+id/velocityX"
         android:text="@string/roll"
+        android:scrollbars = "vertical"
         android:textColor="#ffffff" />
 
     <TextView
@@ -338,12 +369,23 @@
         android:text=""
         android:textColor="#ffffff" />
 
+
+    <TextView
+        android:id="@+id/isotxt"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/btn_follow_mode"
+        android:layout_below="@+id/velocityZ"
+        android:layout_marginBottom="10dp"
+        android:text="Iso: 0"
+        android:textColor="#ffffff" />
+
     <TextView
         android:id="@+id/FlightTimeTxt"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
         android:layout_alignStart="@+id/btn_follow_mode"
-        android:layout_below="@+id/velocityZ"
+        android:layout_below="@+id/isotxt"
         android:text="@string/flightTime"
         android:textColor="#ffffff" />
 
@@ -355,6 +397,7 @@
         android:layout_below="@+id/FlightTimeTxt"
         android:layout_marginBottom="10dp"
         android:text=""
+        android:maxLines = "5"
         android:textColor="#ffffff" />
 
 
@@ -392,5 +435,34 @@
             android:visibility="gone"
             />
 
+    <LinearLayout
+        android:id="@+id/missionLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/video_previewer_surface"
+        android:layout_gravity="center_vertical"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp">
 
+        <TextView
+            android:id="@+id/mission"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/current_mission"
+            android:textColor="#ffffff"
+            android:layout_marginEnd="10dp"
+            />
+
+        <TextView
+            android:id="@+id/missionText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/no_mission"
+            android:textColor="#ffffff" />
+    </LinearLayout>
 </RelativeLayout>

@@ -1,8 +1,11 @@
 package renault.drone.risvrenault;
 
+import android.location.Location;
 import android.support.annotation.NonNull;
 
 import dji.common.battery.BatteryState;
+import dji.common.camera.ExposureSettings;
+import dji.common.camera.SettingsDefinitions.ISO;
 import dji.common.flightcontroller.FlightControllerState;
 import dji.common.flightcontroller.GPSSignalLevel;
 import dji.common.flightcontroller.LocationCoordinate3D;
@@ -16,6 +19,7 @@ import dji.sdk.products.Aircraft;
 
 public class DroneStates {
 
+    private static final double EARTH_RADIUS = 6373;
     private int nbSatellite;
     private GPSSignalLevel signalStrenght;
     private Orientation orientation;
@@ -26,13 +30,27 @@ public class DroneStates {
     private boolean isFlying;
     private boolean areMotorsOn;
     private LocationCoordinate3D location;
+    private LocationCoordinate3D homeLocation;
     private float sensorAltitude;
     private float gpsAltitude;
+    private int isoValue;
 
     private int batteryChargeRemaining;
     private int remainingFlightTime;
+    private double distanceBetweenRCAndDrone;
 
-     DroneStates(Aircraft drone) {
+    DroneStates(final Aircraft drone) {
+        drone.getCamera().setExposureSettingsCallback(new ExposureSettings.Callback() {
+            @Override
+            public void onUpdate(@NonNull ExposureSettings exposureSettings) {
+                if(exposureSettings.getISO() != ISO.AUTO && exposureSettings.getISO() != ISO.UNKNOWN){
+                    isoValue =Integer.parseInt(exposureSettings.getISO().name().substring(4));
+                }
+                else{
+                    isoValue = 0;
+                }
+            }
+        });
 
         drone.getFlightController().setStateCallback(new FlightControllerState.Callback() {
             @Override
@@ -59,6 +77,12 @@ public class DroneStates {
                 sensorAltitude = flightControllerState.getUltrasonicHeightInMeters();
                 gpsAltitude = flightControllerState.getAircraftLocation().getAltitude();
 
+                if(homeLocation == null){
+                    homeLocation = location;
+                }
+
+                computeDistance();
+
                 remainingFlightTime = flightControllerState.getGoHomeAssessment().getRemainingFlightTime();
             }
         });
@@ -69,6 +93,38 @@ public class DroneStates {
                 batteryChargeRemaining = batteryState.getChargeRemainingInPercent();
             }
         });
+    }
+
+    private void computeDistance() {
+        if(PhoneGPSLocation.mCurrentLocation != null && location != null) {
+            Location rcLocation = PhoneGPSLocation.mCurrentLocation;
+
+            double dLon = Math.toRadians(rcLocation.getLongitude() - location.getLongitude());
+            double dLat = Math.toRadians(rcLocation.getLatitude() - location.getLatitude());
+
+            double a = Math.pow((Math.sin(dLat / 2)), 2) + Math.cos(Math.toRadians(location.getLatitude())) * Math.cos(Math.toRadians(rcLocation.getLatitude())) * (Math.pow(Math.sin(dLon / 2), 2));
+            double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            double d = EARTH_RADIUS * c * 1000;
+
+
+            double height = getAltitudeFromGPS();
+
+            distanceBetweenRCAndDrone = Math.sqrt(Math.pow(d, 2) + Math.pow(height, 2));
+
+//            distanceBetweenRCAndDrone = d;
+
+
+        }
+    }
+
+
+    /**
+     * Retrieves distance between the drone and the remote controller in meters
+     *
+     * @return A float representing the distance in meters
+     */
+    public float getDistanceBetweenDroneAndRC() {
+        return (float)distanceBetweenRCAndDrone;
     }
 
 
@@ -110,12 +166,40 @@ public class DroneStates {
     }
 
     /**
+     * Retrieves Home location information (first location of the drone when activated)
+     *
+     * @return An instance of LocationCoordinate3D that represent the home location
+     */
+    public LocationCoordinate3D getHomeLocation() {
+        return homeLocation;
+    }
+
+    /**
      * Retrieves  GPS location information of the drone
      *
      * @return An instance of LocationCoordinate3D that represent the current GPS position of the drone
      */
     public LocationCoordinate3D getLocation() {
         return location;
+    }
+
+
+    /**
+     * Retrieves the current horizontal speed of the drone
+     *
+     * @return A float value of the current horizontal speed of the drone
+     */
+    public float getHorizontalSpeed() {
+        return (float) Math.sqrt(Math.pow(velocityX, 2) + Math.pow(velocityY, 2));
+    }
+
+    /**
+     * Retrieves the current vertical speed of the drone
+     *
+     * @return A float value of the current vertical speed of the drone
+     */
+    public float getVerticalSpeed() {
+        return velocityZ;
     }
 
     /**
@@ -186,5 +270,12 @@ public class DroneStates {
         return remainingFlightTime;
     }
 
-
+    /**
+     * Retrieves iso value
+     *
+     * @return A integer representing the iso value
+     */
+    public int getIso() {
+        return isoValue;
+    }
 }

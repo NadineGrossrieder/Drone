@@ -35,4 +35,10 @@
     <string name="drone_position">Drone Position</string>
     <string name="phone_position">Phone Position</string>
     <string name="Log">Log</string>
+    <string name="current_mission">Current mission :</string>
+    <string name="no_mission">No mission</string>
+    <string name="distance">Distance :</string>
+    <string name="iso">ISO</string>
+    <string name="_0">0</string>
+    <string name="home_position">Home position</string>
 </resources>

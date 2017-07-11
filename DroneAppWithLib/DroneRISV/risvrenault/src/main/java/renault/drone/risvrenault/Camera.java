@@ -7,6 +7,7 @@ import android.os.Environment;
 import android.support.annotation.NonNull;
 
 import java.io.File;
+import java.math.BigDecimal;
 import java.util.List;
 
 import dji.common.camera.SDCardState;
@@ -202,7 +203,7 @@ public class Camera {
                                 if (missionListener != null) {
                                     missionListener.onResultCarCrash(true, "Medias downloaded with success", 0, bitmapArray);
                                 }
-                                droneContext.finishMission();
+                                droneContext.finishMission(false);
                                 threadDownload.interrupt();
                             }
                         };
@@ -245,7 +246,7 @@ public class Camera {
                                                                 @Override
                                                                 public void onRateUpdate(long total, long current, long persize) {
                                                                     if (missionListener != null) {
-                                                                        float currentPercent = ((float) current / (float) total) * 100;
+                                                                        float currentPercent = round((((float) current / (float) total) * 100), 2);
                                                                         missionListener.onResultCarCrash(true, "File " + currentDownloadMedia + "/2 downloaded at ", currentPercent, null);
 
                                                                     }
@@ -365,7 +366,7 @@ public class Camera {
                 missionListener.onResultCarCrash(false, "retrieve picture : " + e.getMessage(), 0, null);
             }
             threadDownload.interrupt();
-            droneContext.finishMission();
+            droneContext.finishMission(true);
         }
     }
 
@@ -503,6 +504,12 @@ public class Camera {
         } catch (Exception e) {
             d.sendMessageBack(true, e.getMessage());
         }
+    }
+
+    public static float round(float d, int decimalPlace) {
+        BigDecimal bd = new BigDecimal(Float.toString(d));
+        bd = bd.setScale(decimalPlace, BigDecimal.ROUND_HALF_UP);
+        return bd.floatValue();
     }
 
 
